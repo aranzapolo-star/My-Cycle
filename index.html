@@ -3,7 +3,7 @@
 <title>My Cycle · period tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#FDF3F4;--card:#fff;--ink:#3A1D2B;--mut:#7d6370;--red:#C2284F;--soft:#F6C4D0;--fol:#6FB394;--ovu:#E8A93A;--lut:#A58BD0;--line:#EBD6DB}
+:root{--bg:#FDF3F4;--card:#fff;--ink:#3A1D2B;--mut:#7d6370;--red:#C2284F;--soft:#F6C4D0;--fol:#93C572;--ovu:#E8A93A;--lut:#7EC8E8;--line:#EBD6DB}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 'Nunito Sans',system-ui,sans-serif}
 h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0 0 .4em}
 button{font:inherit;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--lut);outline-offset:2px}
@@ -45,9 +45,16 @@ fieldset{border:1px solid var(--line);border-radius:14px;margin:0 0 14px;padding
 .grp{display:flex;flex-wrap:wrap;gap:7px}.sub{margin-top:10px;padding:10px;background:#FDF3F4;border-radius:12px;display:none}.sub.show{display:block}
 .sub p{margin:8px 0 4px;font-size:13px;font-weight:700;color:var(--mut)}
 .med{display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:6px}
-input[type=text],select,textarea{padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;width:100%}
+input[type=text],input[type=date],input[type=number],select,textarea{padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;width:100%}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top}th{background:#F6C4D0}
 .tw{overflow-x:auto}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tabs .chip{padding:9px 18px;font-weight:700}
+.tg{display:block;font-size:9px;line-height:1.3;background:var(--lut);color:#123;border-radius:4px;padding:0 3px;margin-top:2px;width:max-content}
+section[hidden]{display:none}.mut{color:var(--mut)}label{display:block;margin-bottom:10px;font-weight:600}
+details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:8px 0}summary{cursor:pointer;font-weight:700}details p{margin:8px 0 2px}
+.bar{height:10px;background:#eee;border-radius:6px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--fol)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.two2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.flag{background:#FFE9ED;border-left:5px solid var(--red);padding:8px 12px;border-radius:8px;margin:6px 0}.flagt{color:var(--red);font-weight:700}
 @media print{body *{visibility:hidden}#rep,#rep *{visibility:visible}#rep{position:absolute;left:0;top:0;background:#fff;padding:0;display:block}.noprint{display:none!important}}
 </style></head><body>
 <div class="wrap">
@@ -55,6 +62,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid 
 
 <div id="auth" class="card">
 <h1 style="color:var(--red)">My Cycle</h1><p>Get to know your body, track how you feel and understand your cycle.</p>
+<p style="font-size:13px;margin:0 0 8px">Please do <b>not</b> use your real name or personal information. Invent a username (for example “blue_moon_27”).</p>
 <label>Username<input id="u" autocomplete="username"></label>
 <label>Password<input id="p" type="password" autocomplete="current-password"></label>
 <div class="err" id="err"></div>
@@ -68,13 +76,13 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid 
 <button class="btn" id="bRep">Report for my doctor</button>
 <button class="btn alt" id="bBak">Backup</button>
 <button class="btn g" id="bOut">Log out</button></div></header>
-<div class="card">
+<nav class="tabs" id="tabs"></nav><section id="t-cal"><div class="card">
 <div class="nav"><button id="prev" aria-label="Previous month">‹</button><span id="sum" style="text-align:center;font-size:14px;color:var(--mut)"></span><button id="next" aria-label="Next month">›</button></div>
 <div class="months" id="months"></div>
 <div class="legend" id="legend"></div>
 <p style="font-size:13px;color:var(--mut);margin:0">Tap a day to log how you feel. Tap a phase to learn what it means. Dashed border = predicted days.</p>
 </div>
-<h2 style="margin-top:22px">Learn about your body</h2><div class="tips" id="tips"></div>
+<div id="phtip" class="card" style="margin-top:14px"></div></section><section id="t-ins" hidden></section><section id="t-learn" hidden></section><section id="t-health" hidden></section>
 </div></div>
 
 <div class="modal" id="m"><div class="box" id="box"></div></div>
@@ -85,7 +93,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const K='cm_users',DAY=864e5,LOC='en-US',BL=['light','moderate','heavy'];
-let user=null,data={},view=new Date(),A={};
+let user=null,data={},prof={},cons=[],view=new Date(),A={};
 view=new Date(view.getFullYear(),view.getMonth(),1);
 const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){alert('Could not save in this browser.')}};
@@ -104,8 +112,8 @@ async function auth(create){const u=$('#u').value.trim().toLowerCase(),p=$('#p')
  if(create){if(us[u]){$('#err').textContent='That username already exists. Choose another or press Log in.';return}
   const salt=Math.random().toString(36).slice(2);us[u]={salt,h:await hash(p,salt)};sv(K,us)}
  else{if(!us[u]||us[u].h!==await hash(p,us[u].salt)){$('#err').textContent='Incorrect username or password.';return}}
- user=u;data=ld('cm_d_'+u,{});sessionStorage.setItem('cm_s',u);start()}
-function start(){$('#auth').style.display='none';$('#app').style.display='block';$('#hi').textContent='Hi, '+user;draw()}
+ user=u;data=ld('cm_d_'+u,{});prof=ld('cm_p_'+u,{});cons=ld('cm_c_'+u,[]);sessionStorage.setItem('cm_s',u);start()}
+function start(){$('#auth').style.display='none';$('#app').style.display='block';$('#hi').textContent='Hi, '+user;draw();showTab(prof.age?'cal':'health')}
 $('#login').onclick=()=>auth(false);$('#reg').onclick=()=>auth(true);
 $('#bOut').onclick=()=>{sessionStorage.removeItem('cm_s');location.reload()};
 $('#p').onkeydown=e=>{if(e.key==='Enter')auth(false)};
@@ -145,7 +153,7 @@ function draw(){analyze();const wrap=$('#months');wrap.innerHTML='';const today=
   for(let d=1;d<=dim;d++){const dt=new Date(f.getFullYear(),f.getMonth(),d),k=key(dt),e=data[k],p=phaseOf(num(k));
    let c='day';if(e&&e.bleed&&BL.includes(e.bleed.flow))c+=' bleed';else if(e&&e.bleed&&e.bleed.flow==='spotting')c+=' spot';else if(p&&p.pred)c+=' pred';
    if(p)c+=' ph-'+p.ph;if(k===today)c+=' today';if(e)c+=' dot';
-   h+='<button class="'+c+'" data-k="'+k+'" aria-label="'+dt.toLocaleDateString(LOC,{month:'long',day:'numeric'})+'"><span class="n">'+d+'</span>'+(p?'<span class="d">day '+p.k+'</span>':'')+'</button>'}
+   h+='<button class="'+c+'" data-k="'+k+'" aria-label="'+dt.toLocaleDateString(LOC,{month:'long',day:'numeric'})+'"><span class="n">'+d+'</span>'+(p?'<span class="d">day '+p.k+'</span>':'')+tag(k)+'</button>'}
   wrap.insertAdjacentHTML('beforeend',h+'</div></div>')}
  wrap.querySelectorAll('.day[data-k]').forEach(b=>b.onclick=()=>openDay(b.dataset.k));
  $('#legend').innerHTML=['men','fol','ovu','lut','bleed','pred'].map(x=>'<button class="chip" data-p="'+x+'"><span class="lg" style="background:'+PH[x][1]+';border:'+(x==='pred'?'2px dashed var(--red)':'0')+'"></span>'+PH[x][0]+'</button>').join('');
@@ -179,6 +187,7 @@ function openDay(k){const e=data[k]||{},b=e.bleed||{},p=phaseOf(num(k));
  '<fieldset><legend>6. Energy</legend>'+grp('energy',e.energy)+'</fieldset>'+
  '<fieldset><legend>7. Pain medication</legend><div id="meds">'+(e.meds&&e.meds.length?e.meds:[{}]).map(m=>medRow({n:m.n||'',dose:m.dose||'',eff:m.eff||''})).join('')+'</div><button type="button" class="chip" id="addm">+ Add another medication</button></fieldset>'+
  '<fieldset><legend>8. Sex life and discharge</legend>'+grp('other',e.other||[],1)+'</fieldset>'+
+ '<fieldset><legend>9. Body and contraception</legend><div class="two2"><label>Weight (kg)<input type="number" step="0.1" id="wt" value="'+esc(e.wt)+'"></label><label>Basal temperature (°C)<input type="number" step="0.01" id="tp" value="'+esc(e.temp)+'"></label></div><p class="mut" style="margin:4px 0">Contraception today</p>'+grp('bc',e.bc)+'</fieldset>'+
  '<fieldset><legend>Notes</legend><textarea id="note" rows="3">'+esc(e.note)+'</textarea></fieldset>'+
  '<button class="btn" id="save">Save</button> <button class="btn g" onclick="closeM()">Cancel</button> <button class="btn alt" id="del">Delete this day</button>';
  $('#m').classList.add('open');
@@ -193,7 +202,7 @@ function openDay(k){const e=data[k]||{},b=e.bleed||{},p=phaseOf(num(k));
   const fl=one('flow');if(fl)r.bleed={flow:fl.toLowerCase(),amount:one('amount'),color:one('color'),clots:one('clots'),change:one('change')};
   ['emo','crav','phys','other'].forEach(n=>{const v=g(n);if(v.length)r[n]=v});
   if(g('crav').includes('Other')){const o=$('#cravo').value.trim();if(o)r.cravo=o}
-  if(one('cramp'))r.cramp=one('cramp');if(one('energy'))r.energy=one('energy');
+  if(one('bc'))r.bc=one('bc');const wv=$('#wt').value.trim(),tv=$('#tp').value.trim();if(wv)r.wt=wv;if(tv)r.temp=tv;if(one('cramp'))r.cramp=one('cramp');if(one('energy'))r.energy=one('energy');
   const ms=[...document.querySelectorAll('#meds .med')].map(x=>{const i=x.querySelectorAll('input,select');return{n:i[0].value.trim(),dose:i[1].value.trim(),eff:i[2].value}}).filter(m=>m.n);
   if(ms.length)r.meds=ms;const nt=$('#note').value.trim();if(nt)r.note=nt;
   if(Object.keys(r).length)data[k]=r;else delete data[k];persist()}}
@@ -202,20 +211,20 @@ function persist(){sv('cm_d_'+user,data);closeM();draw()}
 /* ---------- doctor report ---------- */
 function rows(){return Object.keys(data).sort().map(k=>{const e=data[k],b=e.bleed,p=phaseOf(num(k));
  return{k,cd:p?p.k:'',ph:p?PH[p.ph][0]:'',bl:b?[cap(b.flow),b.amount,b.color,b.clots,b.change&&'change '+b.change.toLowerCase()].filter(Boolean).join(', '):'',
- cr:e.cramp??'',sx:[...(e.emo||[]),...(e.phys||[]),...(e.crav||[]).map(x=>'Craving: '+x+(x==='Other'&&e.cravo?' ('+e.cravo+')':'')),...(e.other||[])].join(', '),
+ cr:e.cramp??'',sx:[...(e.emo||[]),...(e.phys||[]),...(e.crav||[]).map(x=>'Craving: '+x+(x==='Other'&&e.cravo?' ('+e.cravo+')':'')),...(e.other||[]),e.bc?'Contraception: '+e.bc:'',e.wt?'Weight '+e.wt+' kg':'',e.temp?'Temp '+e.temp+' °C':''].filter(Boolean).join(', '),
  en:e.energy||'',md:(e.meds||[]).map(m=>m.n+(m.dose?' '+m.dose:'')+(m.eff?' (relief: '+m.eff.toLowerCase()+')':'')).join('; '),nt:e.note||''}})}
 $('#bRep').onclick=()=>{analyze();const R=rows(),strong=R.filter(r=>+r.cr>=7).length,last=A.starts.length?fmt(key(fromNum(A.starts[A.starts.length-1]))):'no data';
  $('#repbox').innerHTML='<div class="noprint"><button class="btn" onclick="window.print()">Print or save as PDF</button> <button class="btn alt" id="csv">Download Excel (CSV)</button> <button class="btn g" onclick="$(\'#rep\').classList.remove(\'open\')">Close</button></div>'+
  '<h2 style="margin-top:14px">Menstrual cycle log · '+esc(user)+'</h2><p>Generated on '+new Date().toLocaleDateString(LOC,{dateStyle:'long'})+'. Information logged by the user herself; this is not a diagnosis.</p>'+
  '<p><b>Summary:</b> last period logged: '+last+' · estimated average cycle: '+A.L+' days · average period length: '+A.P+' days · period starts logged: '+A.starts.length+' · days with cramps 7 or higher: '+strong+' · days logged: '+R.length+'.</p>'+
- (R.length?'<div class="tw"><table><tr><th>Date</th><th>Cycle day</th><th>Phase</th><th>Bleeding</th><th>Cramps (0-10)</th><th>Symptoms</th><th>Energy</th><th>Medication</th><th>Notes</th></tr>'+R.map(r=>'<tr><td>'+fmt(r.k)+'</td><td>'+r.cd+'</td><td>'+r.ph+'</td><td>'+esc(r.bl)+'</td><td>'+r.cr+'</td><td>'+esc(r.sx)+'</td><td>'+esc(r.en)+'</td><td>'+esc(r.md)+'</td><td>'+esc(r.nt)+'</td></tr>').join('')+'</table></div>':'<p>No days logged yet.</p>');
+ visitsHtml()+(R.length?'<div class="tw"><table><tr><th>Date</th><th>Cycle day</th><th>Phase</th><th>Bleeding</th><th>Cramps (0-10)</th><th>Symptoms</th><th>Energy</th><th>Medication</th><th>Notes</th></tr>'+R.map(r=>'<tr><td>'+fmt(r.k)+'</td><td>'+r.cd+'</td><td>'+r.ph+'</td><td>'+esc(r.bl)+'</td><td>'+r.cr+'</td><td>'+esc(r.sx)+'</td><td>'+esc(r.en)+'</td><td>'+esc(r.md)+'</td><td>'+esc(r.nt)+'</td></tr>').join('')+'</table></div>':'<p>No days logged yet.</p>');
  $('#rep').classList.add('open');
  $('#csv').onclick=()=>{const q=v=>'"'+String(v).replace(/"/g,'""')+'"',L=[['Date','Cycle day','Phase','Bleeding','Cramps','Symptoms','Energy','Medication','Notes'].map(q).join(',')].concat(R.map(r=>[r.k,r.cd,r.ph,r.bl,r.cr,r.sx,r.en,r.md,r.nt].map(q).join(',')));dl('\ufeff'+L.join('\n'),'cycle-report.csv','text/csv')}};
 function dl(t,n,ty){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:ty}));a.download=n;a.click()}
 
 /* ---------- backup ---------- */
-$('#bBak').onclick=()=>{if(confirm('OK = DOWNLOAD a backup.\nCancel = RESTORE from a backup file you already have.'))dl(JSON.stringify(data),'my-cycle-backup-'+user+'.json','application/json');else $('#file').click()};
-$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(typeof d!=='object')throw 0;data=d;sv('cm_d_'+user,data);draw();alert('Backup restored.')}catch(x){alert('That file is not a valid backup.')}};r.readAsText(f)};
+$('#bBak').onclick=()=>{if(confirm('OK = DOWNLOAD a backup.\nCancel = RESTORE from a backup file you already have.'))dl(JSON.stringify({d:data,p:prof,c:cons}),'my-cycle-backup-'+user+'.json','application/json');else $('#file').click()};
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(typeof d!=='object')throw 0;if(d.d){data=d.d;prof=d.p||{};cons=d.c||[]}else data=d;sv('cm_d_'+user,data);sv('cm_p_'+user,prof);sv('cm_c_'+user,cons);draw();alert('Backup restored.')}catch(x){alert('That file is not a valid backup.')}};r.readAsText(f)};
 
 /* ---------- tips ---------- */
 const T=[['Your cycle starts on day 1','The first day of real bleeding is day 1. A typical cycle lasts 21 to 35 days and can vary by a few days each month.'],
@@ -226,7 +235,134 @@ const T=[['Your cycle starts on day 1','The first day of real bleeding is day 1.
 ['Sexual health','Condoms protect against sexually transmitted infections. If you are sexually active, get regular checkups and a Pap test as your doctor recommends.'],
 ['What is normal discharge?','It changes through the cycle. See a doctor if you notice a bad smell, itching, burning or a green or grey color: these can be signs of infection.'],
 ['Food and rest','Good sleep, movement, water and iron-rich foods (lentils, spinach, red meat) can help you feel better during your period.']];
-$('#tips').innerHTML=T.map(t=>'<div><b>'+t[0]+'</b>'+t[1]+'</div>').join('');
+/* ---------- v2: tabs ---------- */
+O.bc=['Pill','Patch','Ring','IUD','Implant','Injection','Condom','None','Other'];
+const TABS=[['cal','Calendar'],['ins','Insights'],['learn','Learn'],['health','My health']];
+function showTab(t){TABS.forEach(x=>$('#t-'+x[0]).hidden=x[0]!==t);
+ $('#tabs').innerHTML=TABS.map(x=>'<button class="chip'+(x[0]===t?' on':'')+'" data-t="'+x[0]+'">'+x[1]+'</button>').join('');
+ $('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+ if(t==='cal')phTip();if(t==='ins')insights();if(t==='learn')learn();if(t==='health')health()}
+function tag(k){let t='';if(prof.pap===k)t+='<span class="tg">Cervical test</span>';if(prof.papNext===k)t+='<span class="tg">Test due</span>';if(cons.some(c=>c.date===k))t+='<span class="tg">Doctor</span>';return t}
+const sh=n=>fromNum(n).toLocaleDateString(LOC,{month:'short',day:'numeric'});
 
-const s=sessionStorage.getItem('cm_s');if(s&&ld(K,{})[s]){user=s;data=ld('cm_d_'+s,{});start()}
+/* ---------- tips by phase ---------- */
+const PT={men:{food:'Iron-rich foods (lentils, spinach, red meat) and warm drinks.',move:'Walking, stretching or yoga. Rest if you need it.',mind:'Low energy is normal. Plan lighter days if you can.'},
+fol:{food:'Fresh fruit, vegetables and protein to support rising energy.',move:'A good time for harder workouts or trying new things.',mind:'Many people feel motivated and social now.'},
+ovu:{food:'Water, fiber and colorful vegetables.',move:'Energy is usually high: cardio or strength training.',mind:'Sex drive often peaks. This is your most fertile time, so use protection if you do not want a pregnancy.'},
+lut:{food:'Complex carbs, magnesium (nuts, dark chocolate); less salt and caffeine to ease bloating.',move:'Moderate exercise like swimming or pilates can ease PMS.',mind:'Mood dips are common. Sleep and a calm routine help.'}};
+function phTip(sel){const p=phaseOf(num(key(new Date())));sel=sel||(p?p.ph:'men');
+ $('#phtip').innerHTML='<h3>Tips for each phase'+(p?' <small style="font-weight:400">· today you are in: '+PH[p.ph][0]+'</small>':'')+'</h3><div class="legend">'+['men','fol','ovu','lut'].map(x=>'<button class="chip'+(x===sel?' on':'')+'" data-x="'+x+'">'+PH[x][0]+'</button>').join('')+'</div>'+['food','move','mind'].map(k=>'<p><b>'+{food:'Food',move:'Movement',mind:'Mind and mood'}[k]+':</b> '+PT[sel][k]+'</p>').join('');
+ $('#phtip').querySelectorAll('.chip').forEach(b=>b.onclick=()=>phTip(b.dataset.x))}
+
+/* ---------- charts ---------- */
+const svg=(w,h,i)=>'<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:520px">'+i+'</svg>';
+function bars(lab,val,col){const w=520,h=150,m=Math.max(...val,1),sp=(w-40)/val.length,bw=Math.min(44,sp-8);
+ return svg(w,h+32,val.map((v,i)=>{const x=30+i*sp,bh=v/m*h;return'<rect x="'+x+'" y="'+(h-bh+14)+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+col+'"/><text x="'+(x+bw/2)+'" y="'+(h-bh+10)+'" font-size="11" text-anchor="middle">'+v+'</text><text x="'+(x+bw/2)+'" y="'+(h+28)+'" font-size="10" text-anchor="middle" fill="#7d6370">'+esc(lab[i])+'</text>'}).join(''))}
+function line(P,col){if(P.length<2)return'<p class="mut">Log at least 2 values to see this chart.</p>';
+ const w=520,h=140,lo=Math.min(...P.map(p=>p.v)),hi=Math.max(...P.map(p=>p.v)),r=hi-lo||1,xy=(p,i)=>[40+i*(w-60)/(P.length-1),h-(p.v-lo)/r*(h-30)];
+ return svg(w,h+30,'<polyline fill="none" stroke="'+col+'" stroke-width="3" points="'+P.map((p,i)=>xy(p,i).join(',')).join(' ')+'"/>'+P.map((p,i)=>{const[x,y]=xy(p,i);return'<circle cx="'+x+'" cy="'+y+'" r="4" fill="'+col+'"/>'}).join('')+'<text x="40" y="'+(h+22)+'" font-size="10" fill="#7d6370">'+P[0].l+'</text><text x="'+(w-20)+'" y="'+(h+22)+'" font-size="10" text-anchor="end" fill="#7d6370">'+P[P.length-1].l+'</text><text x="2" y="14" font-size="10">'+hi+'</text><text x="2" y="'+h+'" font-size="10">'+lo+'</text>')}
+
+/* ---------- pattern detection ---------- */
+function patterns(){const out=[],ks=Object.keys(data).sort(),cnt={},cr={};
+ ks.forEach(k=>{const e=data[k],p=phaseOf(num(k));if(!p)return;
+  [...(e.emo||[]),...(e.phys||[]),...(e.crav||[]).map(x=>x+' cravings')].forEach(s=>{const c=cnt[s]=cnt[s]||{t:0};c[p.ph]=(c[p.ph]||0)+1;c.t++});
+  if(e.cramp!==undefined)(cr[p.k]=cr[p.k]||[]).push(+e.cramp)});
+ Object.keys(cnt).forEach(s=>{const c=cnt[s];if(c.t<3)return;['men','fol','ovu','lut'].forEach(ph=>{if(c[ph]/c.t>=.6)out.push('You often log <b>'+s.toLowerCase()+'</b> in the <b>'+PH[ph][0].toLowerCase()+'</b> ('+c[ph]+' of '+c.t+' times).')})});
+ const av=a=>a.reduce((x,y)=>x+y,0)/a.length,early=[],late=[];Object.keys(cr).forEach(k=>(+k<=3?early:late).push(...cr[k]));
+ if(early.length>=2&&late.length>=2&&av(early)>=av(late)+2)out.push('Your cramps are strongest in the first days of your period (average '+av(early).toFixed(1)+' vs '+av(late).toFixed(1)+' the rest of the cycle).');
+ const hi=ks.filter(k=>+data[k].cramp>=8).length;if(hi)out.push('<span class="flagt">Check with a doctor:</span> you logged cramps of 8 or more on '+hi+' day(s). Severe pain is worth discussing.');
+ const cl=A.starts.slice(1).map((s,i)=>s-A.starts[i]);
+ if(cl.length>=2){const mn=Math.min(...cl),mx=Math.max(...cl);out.push(mx-mn>7?'Your cycles vary by '+(mx-mn)+' days ('+mn+' to '+mx+'). Irregular cycles are common but worth mentioning to a doctor.':'Your cycles look fairly regular: '+mn+' to '+mx+' days.');
+  if(mn<21||mx>35)out.push('<span class="flagt">Check with a doctor:</span> at least one cycle was shorter than 21 or longer than 35 days.')}
+ if(A.groups.some(g=>g.length>7))out.push('<span class="flagt">Check with a doctor:</span> a period lasted more than 7 days.');
+ if(ks.filter(k=>{const b=data[k].bleed;return b&&b.flow==='heavy'&&(b.change==='Every hour or less'||(b.clots||'').startsWith('Large'))}).length>=2)out.push('<span class="flagt">Check with a doctor:</span> you logged very heavy bleeding signs (changing every hour or large clots) more than once.');
+ const md={};ks.forEach(k=>(data[k].meds||[]).forEach(m=>{const i=EFF.indexOf(m.eff);if(i>0)(md[m.n.toLowerCase()]=md[m.n.toLowerCase()]||[]).push(i)}));
+ Object.keys(md).forEach(n=>out.push('<b>'+esc(n)+'</b>: your average relief rating is "'+EFF[Math.round(av(md[n]))].toLowerCase()+'" ('+md[n].length+' entries).'));
+ return out}
+function insights(){analyze();const ks=Object.keys(data).sort(),cl=A.starts.slice(1).map((s,i)=>s-A.starts[i]).slice(-8),st=A.starts.slice(0,-1).slice(-8),sc={};
+ ks.forEach(k=>[...(data[k].emo||[]),...(data[k].phys||[])].forEach(s=>sc[s]=(sc[s]||0)+1));
+ const top=Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,6),pt=a=>ks.filter(k=>data[k][a]).slice(-30).map(k=>({l:sh(num(k)),v:+data[k][a]})),
+ cp=ks.filter(k=>data[k].cramp!==undefined).slice(-30).map(k=>({l:sh(num(k)),v:+data[k].cramp})),P=patterns(),ch=(t,b)=>'<div class="card"><h3>'+t+'</h3>'+b+'</div>',e='<p class="mut">Not enough data yet.</p>';
+ $('#t-ins').innerHTML='<div class="card"><h3>Patterns we noticed</h3>'+(P.length?P.map(x=>'<div class="flag">'+x+'</div>').join(''):'<p class="mut">Keep logging. Patterns appear after a few cycles.</p>')+'<p class="mut" style="font-size:13px">These are simple statistics from what you logged, not a diagnosis.</p></div><div class="two" style="margin-top:14px">'+
+ ch('Cycle length (days)',cl.length?bars(st.map(s=>sh(s)),cl,'#93C572'):e)+ch('Cramp pain (0-10)',line(cp,'#C2284F'))+ch('Most logged symptoms',top.length?bars(top.map(x=>x[0].slice(0,9)),top.map(x=>x[1]),'#7EC8E8'):e)+ch('Basal temperature (°C)',line(pt('temp'),'#E8A93A'))+ch('Weight (kg)',line(pt('wt'),'#7EC8E8'))+'</div>'}
+
+/* ---------- learn ---------- */
+const MY=[['You cannot get pregnant during your period.','It is unlikely but possible, especially with short cycles, because sperm can live up to 5 days.'],
+['Every cycle lasts exactly 28 days.','28 is just an average. Normal cycles last 21 to 35 days and can change from month to month.'],
+['Period blood is dirty or toxic.','It is blood and tissue from the uterine lining. It is not toxic.'],
+['You should not exercise or shower during your period.','Both are safe. Movement can even ease cramps.'],
+['A tampon can get lost inside you.','The opening of the cervix is too small. If you cannot find the string, a doctor can remove it.'],
+['Painful periods are normal, you just have to endure them.','Mild cramps are common, but pain that stops your daily life can be a sign of conditions like endometriosis. It deserves attention.'],
+['Friends who live together get synchronized periods.','Studies have not confirmed it. It is most likely coincidence.'],
+['Ovulation always happens on day 14.','It happens about 14 days before the NEXT period, so it moves if your cycles are longer or shorter.']];
+const FQ=[['How do I count my cycle?','Day 1 is the first day of real bleeding. The cycle ends the day before your next period starts.'],
+['What is a normal period?','Bleeding for 3 to 7 days, a cycle of 21 to 35 days, and losing roughly 2 to 6 tablespoons of blood in total.'],
+['Is spotting normal?','Light spotting around ovulation or just before a period can be normal. Spotting often or after sex is worth mentioning to a doctor.'],
+['Why is my period late?','Stress, poor sleep, big weight changes, intense exercise, travel, PCOS, thyroid problems, new contraception or pregnancy can all delay it.'],
+['Does the pill regulate my period?','The bleeding on the pill is a withdrawal bleed, not a natural period. The pill can hide irregular cycles that still deserve a checkup.'],
+['Can I use this app as birth control?','No. Predictions are estimates and cannot prevent pregnancy.']];
+const GL=[['Amenorrhea','No periods for 3 months or more (not caused by pregnancy or menopause).'],['Dysmenorrhea','Painful periods or cramps.'],['Menorrhagia','Very heavy or long periods.'],['Oligomenorrhea','Periods that come less often than every 35 days.'],['Endometrium','The inner lining of the uterus that sheds during a period.'],['Ovulation','Release of an egg from the ovary.'],['Follicle','A small sac in the ovary where an egg matures.'],['Estrogen','Hormone that builds up the uterine lining and rises before ovulation.'],['Progesterone','Hormone that rises after ovulation and prepares the uterus for pregnancy.'],['PMS','Premenstrual syndrome: physical and emotional symptoms in the days before a period.'],['PMDD','A severe form of PMS with strong mood symptoms. A doctor can help.'],['PCOS','Polycystic ovary syndrome: hormonal condition that can cause irregular periods, acne and excess hair.'],['Endometriosis','Tissue similar to the uterine lining grows outside the uterus and can cause strong pain.'],['Fibroids','Non-cancerous growths in the uterus that can cause heavy bleeding.'],['Pap test','Screening test that checks the cervix for abnormal cells.'],['HPV','Human papillomavirus: a very common infection that can cause cervical cancer. A vaccine exists.'],['Mammogram','X-ray of the breast used to detect cancer early.'],['Spotting','Light bleeding outside of a normal period.'],['Basal body temperature','Your lowest resting temperature; it rises slightly after ovulation.']];
+const BC=[['Implant',0.05,'A small rod under the skin of the arm. Once in place there is little to remember. May cause irregular bleeding.'],['IUD, hormonal',0.2,'Placed in the uterus by a professional. Works for years with nothing to remember.'],['IUD, copper',0.8,'Placed in the uterus by a professional. Hormone-free; periods may become heavier.'],['Injectable',6,'Repeat injections must be on time.'],['Pill, patch or ring',9,'The pill must be taken every day; patch and ring changed on time.'],['Male condom',18,'Must be used correctly every time. Also helps prevent HIV and other STIs.'],['Withdrawal',22,'Depends on perfect timing every time.'],['Fertility-awareness methods',24,'Need careful daily tracking, and abstaining or using condoms on fertile days. This app’s predictions are NOT contraception.']];
+const SRC='<ul style="margin:0;padding-left:18px"><li><a href="https://www.paho.org/en/news/6-7-2021-new-recommendations-screening-and-treatment-prevent-cervical-cancer" target="_blank" rel="noopener">WHO guideline on cervical cancer screening and treatment (2021)</a></li><li><a href="https://www.who.int/news/item/20-12-2022-who-updates-recommendations-on-hpv-vaccination-schedule" target="_blank" rel="noopener">WHO update on the HPV vaccination schedule (2022)</a></li><li><a href="https://www3.paho.org/hq/dmdocuments/2015/WHO-ENG-Mammography-Factsheet.pdf" target="_blank" rel="noopener">WHO position paper on mammography screening</a></li><li><a href="https://fphandbook.org/sites/default/files/legacy/book/fph_appendix_a/index.shtml" target="_blank" rel="noopener">Family Planning: A Global Handbook for Providers (WHO and Johns Hopkins CCP)</a></li></ul><p class="mut" style="font-size:13px">Items marked WHO in My health and the contraception rates come from these documents. Cycle ranges (21 to 35 days, 3 to 7 days of bleeding) and the myth and FAQ answers are general medical information, not WHO quotations.</p>';
+const RF=['Soaking a pad or tampon every hour for several hours','Clots larger than a coin','Periods longer than 7 days','Cycles shorter than 21 or longer than 35 days','No period for 3 months (and not pregnant)','Bleeding between periods or after sex','Pain that stops you from daily life or is not helped by medication','Bleeding after menopause','Strong smell, itching or green/grey discharge','Fever or dizziness with a period or when using tampons'];
+const F4={men:'Bleeding, possible cramps, lower energy.',fol:'Energy and mood tend to rise.',ovu:'Fertile time. Clear, stretchy discharge.',lut:'PMS may appear: bloating, cravings, mood dips.'};
+function explorer(d){const w=520,h=130,X=i=>20+(i-1)*(w-40)/27,Y=v=>h-8-v*(h-24),g=(x,m,s)=>Math.exp(-((x-m)**2)/(2*s*s)),days=[...Array(28).keys()].map(i=>i+1);
+ const E=days.map(i=>X(i)+','+Y(.12+.7*g(i,13,3)+.3*g(i,21,3.5))).join(' '),Pg=days.map(i=>X(i)+','+Y(.05+.85*g(i,21,3.5))).join(' ');
+ const ph=d<=5?'men':d<=12?'fol':d<=15?'ovu':'lut',B=[[1,5,'#C2284F'],[6,12,'#93C572'],[13,15,'#E8A93A'],[16,28,'#7EC8E8']];
+ $('#ex').innerHTML=svg(w,h+26,B.map(b=>'<rect x="'+(X(b[0])-6)+'" y="0" width="'+(X(b[1])-X(b[0])+12)+'" height="'+h+'" fill="'+b[2]+'" opacity=".22"/>').join('')+'<polyline points="'+E+'" fill="none" stroke="#E0558B" stroke-width="3"/><polyline points="'+Pg+'" fill="none" stroke="#3A7CA5" stroke-width="3"/><line x1="'+X(d)+'" x2="'+X(d)+'" y1="0" y2="'+h+'" stroke="#3A1D2B" stroke-width="2"/><text x="24" y="'+(h+18)+'" font-size="11" fill="#E0558B">pink: estrogen</text><text x="140" y="'+(h+18)+'" font-size="11" fill="#3A7CA5">blue: progesterone</text><text x="'+(w-20)+'" y="'+(h+18)+'" font-size="11" text-anchor="end">day '+d+'</text>')+
+ '<p><button class="chip on" id="exb"><span class="lg" style="background:'+PH[ph][1]+'"></span>Day '+d+': '+PH[ph][0]+'</button> '+F4[ph]+'</p>';$('#exb').onclick=()=>explain(ph)}
+function learn(){const el=$('#t-learn'),c=(t,b)=>'<div class="card" style="margin-top:14px"><h3>'+t+'</h3>'+b+'</div>';
+ el.innerHTML='<div class="card"><h3>Explore a 28-day cycle</h3><p class="mut">Slide through the days to see the hormones and how you might feel. Real cycles vary.</p><input type="range" id="sl" min="1" max="28" value="1" style="width:100%" aria-label="Cycle day"><div id="ex"></div></div>'+
+ c('Myth or fact? Tap to find out',MY.map(m=>'<details><summary>Myth: “'+m[0]+'”</summary><p><b>Fact:</b> '+m[1]+'</p></details>').join(''))+
+ c('Frequently asked questions',FQ.map(m=>'<details><summary>'+m[0]+'</summary><p>'+m[1]+'</p></details>').join(''))+
+ c('Contraceptive methods',BC.map(m=>'<details><summary>'+m[0]+' <span class="mut">· '+m[1]+' in 100 get pregnant in a year</span></summary><div class="bar"><i style="width:'+(100-m[1])+'%"></i></div><p>'+m[2]+'</p></details>').join('')+'<p class="mut" style="font-size:13px">Pregnancies per 100 women in the first year of typical use (WHO Family Planning Handbook). Emergency contraception (pills or a copper IUD) can lower the risk after unprotected sex: ask a health professional quickly. Only condoms also protect against STIs.</p>')+
+ c('Not normal: see a doctor if you notice',RF.map(x=>'<div class="flag">'+x+'</div>').join(''))+
+ c('Medical glossary','<input type="text" id="gs" placeholder="Search a term (e.g. PCOS)" aria-label="Search glossary"><div id="gl"></div>')+
+ c('Sources (WHO)',SRC)+
+ c('More tips','<div class="tips">'+T.map(t=>'<div><b>'+t[0]+'</b>'+t[1]+'</div>').join('')+'</div>');
+ const sl=$('#sl');explorer(1);sl.oninput=()=>explorer(+sl.value);
+ const gl=q=>$('#gl').innerHTML=GL.filter(x=>(x[0]+x[1]).toLowerCase().includes(q.toLowerCase())).map(x=>'<p><b>'+x[0]+':</b> '+x[1]+'</p>').join('')||'<p class="mut">No results.</p>';
+ gl('');$('#gs').oninput=e=>gl(e.target.value)}
+
+/* ---------- my health ---------- */
+function recs(a){const r=[],W=t=>r.push([t,1]),G=t=>r.push([t,0]);
+ if(a<30)W('Cervical screening: WHO recommends starting regular screening at age 30 for the general population. Women living with HIV should start at 25. Your country’s program may start earlier, so follow your local health authority.');
+ else if(a<=65)W('Cervical screening: WHO recommends an HPV DNA test every 5 to 10 years (priority ages 30 to 49). Where HPV tests are not available, a Pap test or VIA every 3 years. Women living with HIV: every 3 to 5 years.');
+ else W('Cervical screening: ask your doctor whether you still need it. WHO gives priority to women aged 50 to 65 who have never been screened.');
+ if(a<=20)W('HPV vaccine: WHO recommends 1 or 2 doses for girls aged 9 to 14 and 1 or 2 doses for ages 15 to 20, ideally before sexual activity.');
+ else W('HPV vaccine: for women over 21, WHO recommends 2 doses 6 months apart. Ask your doctor if you were never vaccinated.');
+ if(a<50)W('Mammography: WHO does not recommend routine population screening before age 50. If close relatives had breast cancer, talk to your doctor about a personal plan, and report any breast change right away.');
+ else if(a<=69)W('Mammography: WHO recommends organized screening every 2 years for ages 50 to 69 where the health system can support it.');
+ else if(a<=75)W('Mammography: for ages 70 to 75, WHO’s suggestion is conditional. Ask your doctor.');
+ else G('Ask your doctor whether to continue mammograms.');
+ W('Sexual health: condoms help prevent HIV and other sexually transmitted infections. Ask a health professional about testing if you may have been exposed.');
+ G('Cycles can change during the teen years and in your 40s. Mention big changes to your doctor.');
+ G('These are general guidelines. Always follow your local health authority and your doctor’s advice.');return r}
+const medRow2=m=>'<div class="med"><input type="text" placeholder="Medication" value="'+esc(m.n)+'"><input type="text" placeholder="Dose" value="'+esc(m.dose)+'"><input type="text" placeholder="How long / how often" value="'+esc(m.time)+'"></div>';
+function health(){const el=$('#t-health'),V=cons.map((c,i)=>({c,i})).sort((a,b)=>b.c.date.localeCompare(a.c.date));
+ el.innerHTML='<div class="card"><h3>My profile</h3><p class="mut">Optional. Age helps tailor recommendations. Your cervical screening dates appear on the calendar.</p><div class="two2"><label>Age<input type="number" min="9" max="99" id="pa" value="'+esc(prof.age)+'"></label><span></span><label>Last cervical screening (Pap or HPV test)<input type="date" id="pl" value="'+esc(prof.pap)+'"></label><label>Next cervical screening<input type="date" id="pn" value="'+esc(prof.papNext)+'"></label><label>Type of test<select id="pt"><option value="3">Pap test (repeat about every 3 years)</option><option value="5"'+(prof.papT==='5'?' selected':'')+'>HPV DNA test (repeat every 5 years or more)</option></select></label></div><p class="mut" style="font-size:13px">If the next date is empty, it is set from the test type (WHO: about every 3 years with Pap or VIA, every 5 to 10 years with an HPV DNA test). Your doctor may suggest another interval.</p><button class="btn" id="ps">Save profile</button></div>'+
+ '<div class="card" style="margin-top:14px"><h3>Recommended for you</h3>'+(prof.age?recs(+prof.age).map(x=>'<p>• '+x[0]+(x[1]?' <span class="tg" style="display:inline">WHO</span>':'')+'</p>').join(''):'<p class="mut">Enter your age to see recommendations such as when to start Pap tests and mammograms.</p>')+'</div>'+
+ '<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><h3>Doctor visits</h3><button class="btn" id="vnw">+ Add visit</button></div>'+(V.length?V.map(o=>'<div class="flag" style="border-color:var(--lut);background:#EAF6FB"><b>'+fmt(o.c.date)+'</b>'+(o.c.doc?' · '+esc(o.c.doc):'')+'<br>'+esc(o.c.notes)+(o.c.meds&&o.c.meds.length?'<br><i>'+o.c.meds.map(m=>esc(m.n+(m.dose?' · '+m.dose:'')+(m.time?' · '+m.time:''))).join('<br>')+'</i>':'')+'<br><button class="chip" data-e="'+o.i+'">Edit</button> <button class="chip" data-x="'+o.i+'">Delete</button></div>').join(''):'<p class="mut">No visits yet. Add the date, the doctor’s instructions and any prescribed medication.</p>')+'</div>'+
+ '<div class="card" style="margin-top:14px"><h3>Privacy and your data</h3><p>Your data stays in this browser and is never sent anywhere. For your safety, <b>do not use your real name</b> as username. Use a made-up one.</p><button class="btn alt" id="w1">Delete all my data</button> <button class="btn g" id="w2">Delete my account</button></div>';
+ $('#ps').onclick=()=>{prof.age=$('#pa').value;prof.pap=$('#pl').value;prof.papNext=$('#pn').value;prof.papT=$('#pt').value;
+  if(prof.pap&&!prof.papNext){const d=new Date(prof.pap+'T00:00:00');d.setFullYear(d.getFullYear()+(+prof.papT||3));prof.papNext=key(d)}
+  sv('cm_p_'+user,prof);draw();health();alert('Profile saved.')};
+ $('#vnw').onclick=()=>visitForm(-1);
+ el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>visitForm(+b.dataset.e));
+ el.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{if(confirm('Delete this visit?')){cons.splice(+b.dataset.x,1);sv('cm_c_'+user,cons);draw();health()}});
+ $('#w1').onclick=()=>wipe(0);$('#w2').onclick=()=>wipe(1)}
+function visitForm(i){const v=i>=0?cons[i]:{date:key(new Date()),meds:[{}]};
+ $('#box').innerHTML='<h2>'+(i>=0?'Edit':'New')+' doctor visit</h2><label>Date<input type="date" id="vd" value="'+v.date+'"></label><label>Doctor or clinic (optional)<input type="text" id="vn" value="'+esc(v.doc)+'"></label><label>Medical instructions<textarea id="vi" rows="4">'+esc(v.notes)+'</textarea></label><fieldset><legend>Prescribed medication</legend><div id="vm">'+(v.meds&&v.meds.length?v.meds:[{}]).map(m=>medRow2({n:m.n||'',dose:m.dose||'',time:m.time||''})).join('')+'</div><button type="button" class="chip" id="vam">+ Add medication</button></fieldset><button class="btn" id="vs">Save</button> <button class="btn g" onclick="closeM()">Cancel</button>';
+ $('#m').classList.add('open');$('#vam').onclick=()=>$('#vm').insertAdjacentHTML('beforeend',medRow2({n:'',dose:'',time:''}));
+ $('#vs').onclick=()=>{const d=$('#vd').value;if(!d){alert('Please choose the visit date.');return}
+  const meds=[...document.querySelectorAll('#vm .med')].map(x=>{const q=x.querySelectorAll('input');return{n:q[0].value.trim(),dose:q[1].value.trim(),time:q[2].value.trim()}}).filter(m=>m.n),r={date:d,doc:$('#vn').value.trim(),notes:$('#vi').value.trim(),meds};
+  if(i>=0)cons[i]=r;else cons.push(r);sv('cm_c_'+user,cons);closeM();draw();health()}}
+function wipe(acct){if(!confirm(acct?'Delete your account and ALL your data? This cannot be undone.':'Delete ALL your logged days, visits and profile? Your account stays. This cannot be undone.'))return;
+ ['d','p','c'].forEach(x=>localStorage.removeItem('cm_'+x+'_'+user));
+ if(acct){const us=ld(K,{});delete us[user];sv(K,us);sessionStorage.removeItem('cm_s');location.reload();return}
+ data={};prof={};cons=[];draw();health()}
+const visitsHtml=()=>(prof.age||prof.pap||cons.length)?'<p>'+(prof.age?'Age: '+esc(prof.age)+'. ':'')+(prof.pap?'Last cervical screening: '+fmt(prof.pap)+'. ':'')+(prof.papNext?'Next cervical screening: '+fmt(prof.papNext)+'.':'')+'</p>'+(cons.length?'<h3>Doctor visits</h3><div class="tw"><table><tr><th>Date</th><th>Doctor</th><th>Instructions</th><th>Prescribed medication</th></tr>'+[...cons].sort((a,b)=>b.date.localeCompare(a.date)).map(c=>'<tr><td>'+fmt(c.date)+'</td><td>'+esc(c.doc)+'</td><td>'+esc(c.notes)+'</td><td>'+(c.meds||[]).map(m=>esc(m.n+(m.dose?' · '+m.dose:'')+(m.time?' · '+m.time:''))).join('<br>')+'</td></tr>').join('')+'</table></div>':'')+'<h3>Daily log</h3>':'';
+
+
+const s=sessionStorage.getItem('cm_s');if(s&&ld(K,{})[s]){user=s;data=ld('cm_d_'+s,{});prof=ld('cm_p_'+s,{});cons=ld('cm_c_'+s,[]);start()}
 </script></body></html>

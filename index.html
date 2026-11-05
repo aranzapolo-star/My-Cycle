@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Cycle · period tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FDF3F4;--card:#fff;--ink:#3A1D2B;--mut:#7d6370;--red:#C2284F;--soft:#F6C4D0;--fol:#6FB394;--ovu:#E8A93A;--lut:#A58BD0;--line:#EBD6DB}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 'Nunito Sans',system-ui,sans-serif}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0 0 .4em}
+button{font:inherit;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--lut);outline-offset:2px}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+.aviso{background:#FFF1D6;border:1px solid #F0D49A;border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px}
+header.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+header.top h1{font-size:28px;margin:0;color:var(--red)}
+.btn{border:0;border-radius:999px;padding:9px 18px;background:var(--red);color:#fff;font-weight:700}
+.btn.alt{background:#fff;color:var(--red);border:2px solid var(--red)}.btn.g{background:#eee;color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}
+#auth{max-width:420px;margin:30px auto}#auth input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;margin:4px 0 12px;font:inherit}
+.err{color:#b00020;font-size:14px;min-height:20px}
+.nav{display:flex;align-items:center;justify-content:space-between;margin:6px 0 12px}
+.nav button{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:20px;color:var(--red)}
+.months{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.months{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{text-align:center;font-size:12px;font-weight:700;color:var(--mut)}
+.day{position:relative;min-height:58px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:4px;text-align:left;border-bottom:5px solid transparent}
+.day .n{font-weight:700;font-size:14px}.day .d{display:block;font-size:10px;color:var(--mut)}
+.day.blank{border:0;background:none;pointer-events:none}
+.day.bleed{background:var(--red);color:#fff;border-color:var(--red)}.day.bleed .d{color:#ffd9e2}
+.day.spot{background:var(--soft)}
+.day.pred{background:#fff;border:2px dashed var(--red)}
+.day.today{box-shadow:0 0 0 3px var(--ink)}
+.day.dot::after{content:"";position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--lut)}
+.day.bleed.dot::after{background:#fff}
+.ph-men{border-bottom-color:var(--red)}.ph-fol{border-bottom-color:var(--fol)}.ph-ovu{border-bottom-color:var(--ovu)}.ph-lut{border-bottom-color:var(--lut)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font-size:14px}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.lg{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tips{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px}
+.tips div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;font-size:14px}.tips b{display:block;font-family:Fraunces,serif;color:var(--red);margin-bottom:4px}
+.modal{position:fixed;inset:0;background:rgba(58,29,43,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px;z-index:9}
+.modal.open{display:flex}.box{background:#fff;border-radius:20px;max-width:680px;width:100%;padding:22px}
+.box.wide{max-width:1000px}
+fieldset{border:1px solid var(--line);border-radius:14px;margin:0 0 14px;padding:10px 14px}legend{font-family:Fraunces,serif;font-weight:700;padding:0 6px}
+.grp{display:flex;flex-wrap:wrap;gap:7px}.sub{margin-top:10px;padding:10px;background:#FDF3F4;border-radius:12px;display:none}.sub.show{display:block}
+.sub p{margin:8px 0 4px;font-size:13px;font-weight:700;color:var(--mut)}
+.med{display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:6px}
+input[type=text],select,textarea{padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;width:100%}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top}th{background:#F6C4D0}
+.tw{overflow-x:auto}
+@media print{body *{visibility:hidden}#rep,#rep *{visibility:visible}#rep{position:absolute;left:0;top:0;background:#fff;padding:0;display:block}.noprint{display:none!important}}
+</style></head><body>
+<div class="wrap">
+<div class="aviso"><b>Important:</b> this is a tracking and educational tool. <b>It does not replace medical care</b>, it does not diagnose, and its predictions are approximate. If you have severe pain, very heavy bleeding or any concern, please talk to a health professional.</div>
+
+<div id="auth" class="card">
+<h1 style="color:var(--red)">My Cycle</h1><p>Get to know your body, track how you feel and understand your cycle.</p>
+<label>Username<input id="u" autocomplete="username"></label>
+<label>Password<input id="p" type="password" autocomplete="current-password"></label>
+<div class="err" id="err"></div>
+<button class="btn" id="login">Log in</button> <button class="btn alt" id="reg">Create account</button>
+<p style="font-size:13px;color:var(--mut)">Your data is saved in this browser on this device. Use “Backup” so you never lose it.</p>
+</div>
+
+<div id="app" style="display:none">
+<header class="top"><h1>My Cycle</h1><div>
+<span id="hi" style="margin-right:8px"></span>
+<button class="btn" id="bRep">Report for my doctor</button>
+<button class="btn alt" id="bBak">Backup</button>
+<button class="btn g" id="bOut">Log out</button></div></header>
+<div class="card">
+<div class="nav"><button id="prev" aria-label="Previous month">‹</button><span id="sum" style="text-align:center;font-size:14px;color:var(--mut)"></span><button id="next" aria-label="Next month">›</button></div>
+<div class="months" id="months"></div>
+<div class="legend" id="legend"></div>
+<p style="font-size:13px;color:var(--mut);margin:0">Tap a day to log how you feel. Tap a phase to learn what it means. Dashed border = predicted days.</p>
+</div>
+<h2 style="margin-top:22px">Learn about your body</h2><div class="tips" id="tips"></div>
+</div></div>
+
+<div class="modal" id="m"><div class="box" id="box"></div></div>
+<div class="modal" id="rep"><div class="box wide" id="repbox"></div></div>
+<input type="file" id="file" accept=".json" style="display:none">
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const K='cm_users',DAY=864e5,LOC='en-US',BL=['light','moderate','heavy'];
+let user=null,data={},view=new Date(),A={};
+view=new Date(view.getFullYear(),view.getMonth(),1);
+const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){alert('Could not save in this browser.')}};
+const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const num=k=>{const[a,b,c]=k.split('-').map(Number);return Date.UTC(a,b-1,c)/DAY};
+const fromNum=n=>{const d=new Date(n*DAY);return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())};
+const fmt=k=>fromNum(num(k)).toLocaleDateString(LOC,{day:'numeric',month:'short',year:'numeric'});
+
+/* ---------- accounts ---------- */
+async function hash(p,salt){const t=new TextEncoder().encode(salt+p);
+ if(crypto&&crypto.subtle){const h=await crypto.subtle.digest('SHA-256',t);return[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+ let h=5381;for(const c of salt+p)h=(h*33)^c.charCodeAt(0);return String(h>>>0)}
+async function auth(create){const u=$('#u').value.trim().toLowerCase(),p=$('#p').value,us=ld(K,{});
+ $('#err').textContent='';
+ if(!u||p.length<4){$('#err').textContent='Enter a username and a password of at least 4 characters.';return}
+ if(create){if(us[u]){$('#err').textContent='That username already exists. Choose another or press Log in.';return}
+  const salt=Math.random().toString(36).slice(2);us[u]={salt,h:await hash(p,salt)};sv(K,us)}
+ else{if(!us[u]||us[u].h!==await hash(p,us[u].salt)){$('#err').textContent='Incorrect username or password.';return}}
+ user=u;data=ld('cm_d_'+u,{});sessionStorage.setItem('cm_s',u);start()}
+function start(){$('#auth').style.display='none';$('#app').style.display='block';$('#hi').textContent='Hi, '+user;draw()}
+$('#login').onclick=()=>auth(false);$('#reg').onclick=()=>auth(true);
+$('#bOut').onclick=()=>{sessionStorage.removeItem('cm_s');location.reload()};
+$('#p').onkeydown=e=>{if(e.key==='Enter')auth(false)};
+
+/* ---------- cycle analysis ---------- */
+function analyze(){
+ const bl=Object.keys(data).filter(k=>data[k].bleed&&BL.includes(data[k].bleed.flow)).map(num).sort((a,b)=>a-b);
+ const groups=[];bl.forEach(n=>{const g=groups[groups.length-1];if(g&&n-g[g.length-1]<=2)g.push(n);else groups.push([n])});
+ const starts=groups.map(g=>g[0]);
+ const lens=[];for(let i=1;i<starts.length;i++){const l=starts[i]-starts[i-1];if(l>=15&&l<=60)lens.push(l)}
+ const avg=(a,d)=>a.length?Math.round(a.slice(-6).reduce((x,y)=>x+y,0)/Math.min(a.length,6)):d;
+ const L=avg(lens,28),P=Math.min(8,Math.max(2,avg(groups.map(g=>g[g.length-1]-g[0]+1),5)));
+ const all=starts.map(s=>({s,pred:false}));
+ if(starts.length){let s=starts[starts.length-1];for(let i=1;i<=6;i++){s+=L;all.push({s,pred:true})}}
+ A={L,P,starts,groups,all,hasData:starts.length>0,cycles:lens.length};
+}
+function phaseOf(n){let c=null,i=-1;
+ for(let j=0;j<A.all.length;j++)if(A.all[j].s<=n){c=A.all[j];i=j}
+ if(!c)return null;
+ const nx=A.all[i+1],Lc=nx?nx.s-c.s:A.L,k=n-c.s+1;
+ if(!nx&&k>Lc)return null;
+ const ov=Math.max(A.P+2,Lc-14);let ph;
+ if(k<=A.P)ph='men';else if(k<ov-1)ph='fol';else if(k<=ov+1)ph='ovu';else ph='lut';
+ return{ph,k,pred:c.pred&&ph==='men'}}
+const PH={men:['Menstruation','var(--red)','This is the start of the cycle: the endometrium (the inner lining of the uterus) sheds and leaves the body as bleeding. It usually lasts 3 to 7 days. Cramps, tiredness or low energy are common. Estrogen and progesterone are low.'],
+fol:['Follicular phase','var(--fol)','It starts on the first day of bleeding and ends with ovulation. The body matures an egg and estrogen rises. Many people feel more energy, a better mood and brighter skin. Discharge is usually scarce and sticky.'],
+ovu:['Ovulation','var(--ovu)','An egg is released from the ovary, usually about 14 days before your next period (not always on day 14). This is the most fertile time: discharge becomes clear and stretchy like egg white. You may notice mild one-sided pain, higher sex drive or light spotting.'],
+lut:['Luteal phase','var(--lut)','It goes from ovulation to your next period. Progesterone rises; if there is no pregnancy, hormones drop and premenstrual symptoms can appear: bloating, cravings, irritability, breast tenderness, acne or tiredness. It lasts about 12 to 14 days.'],
+bleed:['Logged bleeding','var(--red)','Days when you logged light, moderate or heavy bleeding. The page uses them to calculate your period length and cycle length. Spotting is shown in light pink and does not count as the start of a period.'],
+pred:['Predicted days','#fff','Dashed border: an estimate of your next period based on your previous cycles. The more days you log, the closer it gets. Cycles vary with stress, sleep, travel or health, so this is a guide, not a certainty.']};
+
+/* ---------- calendar ---------- */
+function draw(){analyze();const wrap=$('#months');wrap.innerHTML='';const today=key(new Date());
+ for(let m=0;m<2;m++){const f=new Date(view.getFullYear(),view.getMonth()+m,1),dim=new Date(f.getFullYear(),f.getMonth()+1,0).getDate();
+  let h='<div><h3 style="text-align:center">'+f.toLocaleDateString(LOC,{month:'long',year:'numeric'})+'</h3><div class="grid">'+['Mo','Tu','We','Th','Fr','Sa','Su'].map(x=>'<div class="dow">'+x+'</div>').join('');
+  for(let i=0;i<(f.getDay()+6)%7;i++)h+='<div class="day blank"></div>';
+  for(let d=1;d<=dim;d++){const dt=new Date(f.getFullYear(),f.getMonth(),d),k=key(dt),e=data[k],p=phaseOf(num(k));
+   let c='day';if(e&&e.bleed&&BL.includes(e.bleed.flow))c+=' bleed';else if(e&&e.bleed&&e.bleed.flow==='spotting')c+=' spot';else if(p&&p.pred)c+=' pred';
+   if(p)c+=' ph-'+p.ph;if(k===today)c+=' today';if(e)c+=' dot';
+   h+='<button class="'+c+'" data-k="'+k+'" aria-label="'+dt.toLocaleDateString(LOC,{month:'long',day:'numeric'})+'"><span class="n">'+d+'</span>'+(p?'<span class="d">day '+p.k+'</span>':'')+'</button>'}
+  wrap.insertAdjacentHTML('beforeend',h+'</div></div>')}
+ wrap.querySelectorAll('.day[data-k]').forEach(b=>b.onclick=()=>openDay(b.dataset.k));
+ $('#legend').innerHTML=['men','fol','ovu','lut','bleed','pred'].map(x=>'<button class="chip" data-p="'+x+'"><span class="lg" style="background:'+PH[x][1]+';border:'+(x==='pred'?'2px dashed var(--red)':'0')+'"></span>'+PH[x][0]+'</button>').join('');
+ $('#legend').querySelectorAll('.chip').forEach(b=>b.onclick=()=>explain(b.dataset.p));
+ $('#sum').innerHTML=A.hasData?'Average cycle: <b>'+A.L+' days</b> · Period: <b>'+A.P+' days</b>'+(A.cycles<2?'<br>Early estimate: log more cycles to improve it.':''):'Log your bleeding days and you will see your phases and predictions here.'}
+$('#prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);draw()};
+$('#next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);draw()};
+function explain(x){$('#box').innerHTML='<h2>'+PH[x][0]+'</h2><p>'+PH[x][2]+'</p><button class="btn" onclick="closeM()">Got it</button>';$('#m').classList.add('open')}
+function closeM(){$('#m').classList.remove('open')}
+$('#m').onclick=e=>{if(e.target.id==='m')closeM()};
+
+/* ---------- day form ---------- */
+const O={flow:['Spotting','Light','Moderate','Heavy'],amount:['A few drops','Little','Normal','A lot','Soaks the product'],color:['Pink','Light red','Dark red','Brown','Black'],clots:['No clots','Small','Large (bigger than a coin)'],change:['Every hour or less','Every 2-3 h','Every 4-6 h','More than 6 h'],
+emo:['Irritability','Sadness','Anger','Impulsivity','Anxiety','Emotional sensitivity','Crying easily','Mood swings','Trouble concentrating','Calm or well-being','Higher sex drive'],
+crav:['Salty','Sweet','Chocolate','Other'],phys:['Bloating','Headache','Acne','Low energy','Muscle aches','Breast tenderness','Lower back pain','Nausea','Dizziness','Insomnia','Diarrhea','Constipation'],
+cramp:[...Array(11).keys()].map(String),energy:['High','Moderate','Mild','Low','No desire to do anything'],
+other:['Sex with protection','Sex without protection','Clear and stretchy discharge','White or creamy discharge','Discharge with odor or itching']};
+const EFF=['','None','A little','Moderate','A lot','Complete'];
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';
+const grp=(k,sel,multi)=>'<div class="grp" data-k="'+k+'" data-m="'+(multi?1:0)+'">'+O[k].map(o=>'<button type="button" class="chip'+((Array.isArray(sel)?sel.includes(o):sel===o)?' on':'')+'">'+esc(o)+'</button>').join('')+'</div>';
+const medRow=m=>'<div class="med"><input type="text" placeholder="Medication" value="'+esc(m.n)+'" aria-label="Medication"><input type="text" placeholder="Dose (e.g. 400 mg)" value="'+esc(m.dose)+'" aria-label="Dose"><select aria-label="Effectiveness">'+EFF.map((x,i)=>'<option value="'+x+'"'+(m.eff===x?' selected':'')+'>'+(i?'Relief: '+x:'How well did it work?')+'</option>').join('')+'</select></div>';
+function openDay(k){const e=data[k]||{},b=e.bleed||{},p=phaseOf(num(k));
+ $('#box').innerHTML='<h2>'+fromNum(num(k)).toLocaleDateString(LOC,{weekday:'long',month:'long',day:'numeric'})+'</h2>'+
+ (p?'<button class="chip" id="phb"><span class="lg" style="background:'+PH[p.ph][1]+'"></span>Cycle day '+p.k+' · '+PH[p.ph][0]+(p.pred?' (predicted)':'')+'</button>':'')+
+ '<p style="font-size:13px;color:var(--mut)">Everything is optional: log only what you want.</p>'+
+ '<fieldset><legend>1. Bleeding</legend>'+grp('flow',cap(b.flow))+'<div class="sub'+(b.flow?' show':'')+'" id="sub"><p>Amount</p>'+grp('amount',b.amount)+'<p>Color</p>'+grp('color',b.color)+'<p>Clots</p>'+grp('clots',b.clots)+'<p>How often do you change your product?</p>'+grp('change',b.change)+'</div></fieldset>'+
+ '<fieldset><legend>2. Emotional symptoms</legend>'+grp('emo',e.emo||[],1)+'</fieldset>'+
+ '<fieldset><legend>3. Cravings</legend>'+grp('crav',e.crav||[],1)+'<input type="text" id="cravo" placeholder="If other, what?" value="'+esc(e.cravo)+'" style="margin-top:8px"></fieldset>'+
+ '<fieldset><legend>4. Physical symptoms</legend>'+grp('phys',e.phys||[],1)+'</fieldset>'+
+ '<fieldset><legend>5. Menstrual cramps (0 no pain – 10 worst)</legend>'+grp('cramp',e.cramp)+'</fieldset>'+
+ '<fieldset><legend>6. Energy</legend>'+grp('energy',e.energy)+'</fieldset>'+
+ '<fieldset><legend>7. Pain medication</legend><div id="meds">'+(e.meds&&e.meds.length?e.meds:[{}]).map(m=>medRow({n:m.n||'',dose:m.dose||'',eff:m.eff||''})).join('')+'</div><button type="button" class="chip" id="addm">+ Add another medication</button></fieldset>'+
+ '<fieldset><legend>8. Sex life and discharge</legend>'+grp('other',e.other||[],1)+'</fieldset>'+
+ '<fieldset><legend>Notes</legend><textarea id="note" rows="3">'+esc(e.note)+'</textarea></fieldset>'+
+ '<button class="btn" id="save">Save</button> <button class="btn g" onclick="closeM()">Cancel</button> <button class="btn alt" id="del">Delete this day</button>';
+ $('#m').classList.add('open');
+ if(p)$('#phb').onclick=()=>explain(p.ph);
+ $('#box').querySelectorAll('.grp .chip').forEach(c=>c.onclick=()=>{const g=c.parentNode;
+  if(g.dataset.m!=='1'&&!c.classList.contains('on'))g.querySelectorAll('.on').forEach(x=>x.classList.remove('on'));
+  c.classList.toggle('on');
+  if(g.dataset.k==='flow')$('#sub').classList.toggle('show',!!g.querySelector('.on'))});
+ $('#addm').onclick=()=>$('#meds').insertAdjacentHTML('beforeend',medRow({n:'',dose:'',eff:''}));
+ $('#del').onclick=()=>{if(confirm('Delete everything logged on this day?')){delete data[k];persist()}};
+ $('#save').onclick=()=>{const g=n=>[...$('#box').querySelectorAll('.grp[data-k="'+n+'"] .on')].map(x=>x.textContent),one=n=>g(n)[0]||'',r={};
+  const fl=one('flow');if(fl)r.bleed={flow:fl.toLowerCase(),amount:one('amount'),color:one('color'),clots:one('clots'),change:one('change')};
+  ['emo','crav','phys','other'].forEach(n=>{const v=g(n);if(v.length)r[n]=v});
+  if(g('crav').includes('Other')){const o=$('#cravo').value.trim();if(o)r.cravo=o}
+  if(one('cramp'))r.cramp=one('cramp');if(one('energy'))r.energy=one('energy');
+  const ms=[...document.querySelectorAll('#meds .med')].map(x=>{const i=x.querySelectorAll('input,select');return{n:i[0].value.trim(),dose:i[1].value.trim(),eff:i[2].value}}).filter(m=>m.n);
+  if(ms.length)r.meds=ms;const nt=$('#note').value.trim();if(nt)r.note=nt;
+  if(Object.keys(r).length)data[k]=r;else delete data[k];persist()}}
+function persist(){sv('cm_d_'+user,data);closeM();draw()}
+
+/* ---------- doctor report ---------- */
+function rows(){return Object.keys(data).sort().map(k=>{const e=data[k],b=e.bleed,p=phaseOf(num(k));
+ return{k,cd:p?p.k:'',ph:p?PH[p.ph][0]:'',bl:b?[cap(b.flow),b.amount,b.color,b.clots,b.change&&'change '+b.change.toLowerCase()].filter(Boolean).join(', '):'',
+ cr:e.cramp??'',sx:[...(e.emo||[]),...(e.phys||[]),...(e.crav||[]).map(x=>'Craving: '+x+(x==='Other'&&e.cravo?' ('+e.cravo+')':'')),...(e.other||[])].join(', '),
+ en:e.energy||'',md:(e.meds||[]).map(m=>m.n+(m.dose?' '+m.dose:'')+(m.eff?' (relief: '+m.eff.toLowerCase()+')':'')).join('; '),nt:e.note||''}})}
+$('#bRep').onclick=()=>{analyze();const R=rows(),strong=R.filter(r=>+r.cr>=7).length,last=A.starts.length?fmt(key(fromNum(A.starts[A.starts.length-1]))):'no data';
+ $('#repbox').innerHTML='<div class="noprint"><button class="btn" onclick="window.print()">Print or save as PDF</button> <button class="btn alt" id="csv">Download Excel (CSV)</button> <button class="btn g" onclick="$(\'#rep\').classList.remove(\'open\')">Close</button></div>'+
+ '<h2 style="margin-top:14px">Menstrual cycle log · '+esc(user)+'</h2><p>Generated on '+new Date().toLocaleDateString(LOC,{dateStyle:'long'})+'. Information logged by the user herself; this is not a diagnosis.</p>'+
+ '<p><b>Summary:</b> last period logged: '+last+' · estimated average cycle: '+A.L+' days · average period length: '+A.P+' days · period starts logged: '+A.starts.length+' · days with cramps 7 or higher: '+strong+' · days logged: '+R.length+'.</p>'+
+ (R.length?'<div class="tw"><table><tr><th>Date</th><th>Cycle day</th><th>Phase</th><th>Bleeding</th><th>Cramps (0-10)</th><th>Symptoms</th><th>Energy</th><th>Medication</th><th>Notes</th></tr>'+R.map(r=>'<tr><td>'+fmt(r.k)+'</td><td>'+r.cd+'</td><td>'+r.ph+'</td><td>'+esc(r.bl)+'</td><td>'+r.cr+'</td><td>'+esc(r.sx)+'</td><td>'+esc(r.en)+'</td><td>'+esc(r.md)+'</td><td>'+esc(r.nt)+'</td></tr>').join('')+'</table></div>':'<p>No days logged yet.</p>');
+ $('#rep').classList.add('open');
+ $('#csv').onclick=()=>{const q=v=>'"'+String(v).replace(/"/g,'""')+'"',L=[['Date','Cycle day','Phase','Bleeding','Cramps','Symptoms','Energy','Medication','Notes'].map(q).join(',')].concat(R.map(r=>[r.k,r.cd,r.ph,r.bl,r.cr,r.sx,r.en,r.md,r.nt].map(q).join(',')));dl('\ufeff'+L.join('\n'),'cycle-report.csv','text/csv')}};
+function dl(t,n,ty){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:ty}));a.download=n;a.click()}
+
+/* ---------- backup ---------- */
+$('#bBak').onclick=()=>{if(confirm('OK = DOWNLOAD a backup.\nCancel = RESTORE from a backup file you already have.'))dl(JSON.stringify(data),'my-cycle-backup-'+user+'.json','application/json');else $('#file').click()};
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(typeof d!=='object')throw 0;data=d;sv('cm_d_'+user,data);draw();alert('Backup restored.')}catch(x){alert('That file is not a valid backup.')}};r.readAsText(f)};
+
+/* ---------- tips ---------- */
+const T=[['Your cycle starts on day 1','The first day of real bleeding is day 1. A typical cycle lasts 21 to 35 days and can vary by a few days each month.'],
+['When to see a doctor','Get checked if you soak a pad or tampon every hour, pass large clots, have pain that stops you from living normally, very irregular cycles or bleeding between periods.'],
+['Cramps','Local heat, gentle movement and rest help many people. If the pain is strong or getting worse, tell your doctor: it can be treated.'],
+['Ovulation is not the same for everyone','It does not always happen on day 14. Watching your discharge (clear and stretchy) gives clues, but it is not a reliable birth control method.'],
+['Hygiene','Change pads and tampons regularly and never leave a tampon in for more than 8 hours. Wash only the outside; the vagina cleans itself.'],
+['Sexual health','Condoms protect against sexually transmitted infections. If you are sexually active, get regular checkups and a Pap test as your doctor recommends.'],
+['What is normal discharge?','It changes through the cycle. See a doctor if you notice a bad smell, itching, burning or a green or grey color: these can be signs of infection.'],
+['Food and rest','Good sleep, movement, water and iron-rich foods (lentils, spinach, red meat) can help you feel better during your period.']];
+$('#tips').innerHTML=T.map(t=>'<div><b>'+t[0]+'</b>'+t[1]+'</div>').join('');
+
+const s=sessionStorage.getItem('cm_s');if(s&&ld(K,{})[s]){user=s;data=ld('cm_d_'+s,{});start()}
+</script></body></html>

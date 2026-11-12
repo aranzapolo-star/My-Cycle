@@ -315,9 +315,11 @@ function phTip(sel){const p=phaseOf(num(key(new Date())));sel=sel||(p?p.ph:'men'
  $('#phtip').querySelectorAll('.chip').forEach(b=>b.onclick=()=>phTip(b.dataset.x))}
 
 /* ---------- charts ---------- */
-const svg=(w,h,i,l)=>'<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+esc(l||'Chart')+'" style="width:100%;max-width:560px">'+i+'</svg>';
-function bars(lab,val,col){const w=520,h=150,m=Math.max(...val,1),sp=(w-40)/val.length,bw=Math.min(44,sp-8);
- return svg(w,h+32,val.map((v,i)=>{const x=30+i*sp,bh=v/m*h;return'<rect x="'+x+'" y="'+(h-bh+14)+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+col+'"/><text x="'+(x+bw/2)+'" y="'+(h-bh+10)+'" font-size="11" text-anchor="middle">'+v+'</text><text x="'+(x+bw/2)+'" y="'+(h+28)+'" font-size="10" text-anchor="middle" fill="#7d6370">'+esc(lab[i])+'</text>'}).join(''),'Bar chart: '+lab.map((l,i)=>l+' '+val[i]).join(', '))}
+const svg=(w,h,i,l)=>{const t='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+esc(l||'Chart')+'" style="'+(w>560?'width:'+w+'px;max-width:none':'width:100%;max-width:560px')+'">'+i+'</svg>';return w>700?'<div class="tw">'+t+'</div><p class="mut noprint" style="font-size:12px;margin:2px 0">Wide chart: scroll sideways to see every bar.</p>':w>560?'<div class="tw">'+t+'</div>':t};
+const shy=n=>fromNum(n).toLocaleDateString(LOC,{month:'short',day:'numeric',year:'2-digit'});
+const xl=(x,y,t,rot)=>rot?'<text transform="rotate(-60 '+x+' '+y+')" x="'+x+'" y="'+y+'" font-size="10" text-anchor="end" fill="#7d6370">'+esc(t)+'</text>':'<text x="'+x+'" y="'+(y+12)+'" font-size="10" text-anchor="middle" fill="#7d6370">'+esc(t)+'</text>';
+function bars(lab,val,col){const rot=val.length>6&&lab.some(l=>String(l).length>4),w=Math.max(520,val.length*26+70),h=150,m=Math.max(...val,1),sp=(w-40)/val.length,bw=Math.min(44,sp-8);
+ return svg(w,h+(rot?64:32),val.map((v,i)=>{const x=30+i*sp,bh=v/m*h;return'<rect x="'+x+'" y="'+(h-bh+14)+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+col+'"/><text x="'+(x+bw/2)+'" y="'+(h-bh+10)+'" font-size="11" text-anchor="middle">'+v+'</text>'+xl(x+bw/2+(rot?4:0),h+(rot?20:16),lab[i],rot)}).join(''),'Bar chart: '+lab.map((l,i)=>l+' '+val[i]).join(', '))}
 function line(P,col){if(P.length<2)return'<p class="mut">Log at least 2 values to see this chart.</p>';
  const w=520,h=140,lo=Math.min(...P.map(p=>p.v)),hi=Math.max(...P.map(p=>p.v)),r=hi-lo||1,xy=(p,i)=>[40+i*(w-60)/(P.length-1),h-(p.v-lo)/r*(h-30)];
  return svg(w,h+30,'<polyline fill="none" stroke="'+col+'" stroke-width="3" points="'+P.map((p,i)=>xy(p,i).join(',')).join(' ')+'"/>'+P.map((p,i)=>{const[x,y]=xy(p,i);return'<circle cx="'+x+'" cy="'+y+'" r="4" fill="'+col+'"/>'}).join('')+'<text x="40" y="'+(h+22)+'" font-size="10" fill="#7d6370">'+P[0].l+'</text><text x="'+(w-20)+'" y="'+(h+22)+'" font-size="10" text-anchor="end" fill="#7d6370">'+P[P.length-1].l+'</text><text x="2" y="14" font-size="10">'+hi+'</text><text x="2" y="'+h+'" font-size="10">'+lo+'</text>','Line chart of '+P.length+' values from '+P[0].l+' ('+P[0].v+') to '+P[P.length-1].l+' ('+P[P.length-1].v+'), lowest '+lo+', highest '+hi)}
@@ -678,11 +680,11 @@ function personalLuteal(){const out=[];A.starts.forEach((s,i)=>{const nx=A.start
 function sexStats(){const rec=[];Object.keys(data).sort().forEach(k=>{const o=data[k].other||[],c=o.some(x=>COND.includes(x)),n=o.some(x=>NOC.includes(x));if(c||n){const p=phaseOf(num(k));rec.push({k,n:num(k),c:c&&!n,u:n,bc:data[k].bc,fert:!!p&&p.k>=p.ov-5&&p.k<=p.ov+1,p})}});return rec}
 
 /* ---- charts (original SVG) ---- */
-function cycleBars(lab,val,m,s){const w=560,h=160,top=Math.max(...val,m+(s||0))*1.12,Y=v=>h-v/top*h+10,sp=(w-50)/val.length,bw=Math.min(46,sp-8);
+function cycleBars(lab,val,m,s){const rot=val.length>6,w=Math.max(560,val.length*26+90),h=160,top=Math.max(...val,m+(s||0))*1.12,Y=v=>h-v/top*h+10,sp=(w-50)/val.length,bw=Math.min(46,sp-8);
  let o='';if(s)o+='<rect x="34" y="'+Y(m+s)+'" width="'+(w-44)+'" height="'+(Y(m-s)-Y(m+s))+'" fill="#93C572" opacity=".25"/>';
- o+=val.map((v,i)=>{const x=40+i*sp;return'<rect x="'+x+'" y="'+Y(v)+'" width="'+bw+'" height="'+(h+10-Y(v))+'" rx="4" fill="#C2284F"/><text x="'+(x+bw/2)+'" y="'+(Y(v)-4)+'" font-size="11" text-anchor="middle">'+v+'</text><text x="'+(x+bw/2)+'" y="'+(h+26)+'" font-size="10" text-anchor="middle" fill="#7d6370">'+esc(lab[i])+'</text>'}).join('');
- o+='<line x1="34" x2="'+(w-8)+'" y1="'+Y(m)+'" y2="'+Y(m)+'" stroke="#3A1D2B" stroke-width="2" stroke-dasharray="6 4"/><text x="'+(w-8)+'" y="'+(Y(m)-5)+'" font-size="11" text-anchor="end" fill="#3A1D2B">mean '+rd(m,1)+(s?' (shaded: ±1 SD)':'')+'</text><text x="0" y="14" font-size="10" fill="#7d6370">days</text>';
- return svg(w,h+34,o,'Bar chart of cycle length in days. Mean '+rd(m,1)+(s?', standard deviation '+rd(s,1):'')+'. Values: '+val.join(', '))}
+ o+=val.map((v,i)=>{const x=40+i*sp;return'<rect x="'+x+'" y="'+Y(v)+'" width="'+bw+'" height="'+(h+10-Y(v))+'" rx="4" fill="#C2284F"/><text x="'+(x+bw/2)+'" y="'+(Y(v)+13)+'" font-size="11" fill="#fff" text-anchor="middle">'+v+'</text>'+xl(x+bw/2+(rot?4:0),h+(rot?22:14),lab[i],rot)}).join('');
+ o+='<line x1="34" x2="'+(w-8)+'" y1="'+Y(m)+'" y2="'+Y(m)+'" stroke="#3A1D2B" stroke-width="2" stroke-dasharray="6 4"/><text x="0" y="14" font-size="10" fill="#7d6370">days</text>';
+ return svg(w,h+(rot?70:34),o,'Bar chart of cycle length in days. Mean '+rd(m,1)+(s?', standard deviation '+rd(s,1):'')+'. Values: '+val.join(', '))}
 function scatter(xs,ys,xl,yl){const w=520,h=220,x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),X=v=>50+(v-x0)/((x1-x0)||1)*(w-70),Y=v=>h-30-(v-y0)/((y1-y0)||1)*(h-50),lr=ST.linreg(xs,ys),r=ST.pearson(xs,ys);
  let o='<line x1="50" x2="50" y1="10" y2="'+(h-30)+'" stroke="#7d6370"/><line x1="50" x2="'+(w-20)+'" y1="'+(h-30)+'" y2="'+(h-30)+'" stroke="#7d6370"/>';
  o+=xs.map((x,i)=>'<circle cx="'+X(x).toFixed(1)+'" cy="'+Y(ys[i]).toFixed(1)+'" r="5" fill="#C2284F" opacity=".35"/>').join('');
@@ -748,7 +750,7 @@ function anaSections(){analyze();const [RA,RB]=anRange(),C=cycleRecs().filter(c=
  else{const reg=thr?(mx-mn<=thr?'<b class="yes">✔ Regular</b>: your shortest and longest cycles differ by '+(mx-mn)+' days (limit for your age: '+thr+').':'<b class="no">Irregular by the FIGO definition</b>: your shortest and longest cycles differ by '+(mx-mn)+' days (limit for your age: '+thr+'). This is common and not always a problem, but worth mentioning to a doctor.'):'Your shortest and longest cycles differ by '+(mx-mn)+' days. FIGO calls cycles regular when this is 7 days or less (ages 26 to 41) or 9 days or less (ages 18 to 25 and 42 to 45). Enter your age in “My health” to get the verdict.';
   let trend='';if(n>=5){const lr=ST.linreg(L.map((_,i)=>i),L);trend=Math.abs(lr.slope)>=.5?'<p><b>Trend:</b> your cycles are getting about '+rd(Math.abs(lr.slope),1)+' day(s) '+(lr.slope>0?'longer':'shorter')+' with each cycle (straight-line fit). With few cycles this can be chance.</p>':'<p><b>Trend:</b> no clear change over time.</p>'}
   cyc='<div class="tw"><table><tr><th>Cycles analysed</th><th>Mean</th><th>Median</th><th>Std. deviation</th><th>Shortest – longest</th><th>Variation (SD ÷ mean)</th></tr><tr><td>'+n+'</td><td>'+rd(m,1)+' d</td><td>'+rd(mdn,1)+' d</td><td>'+rd(s,1)+' d</td><td>'+mn+' – '+mx+' d</td><td>'+rd(s/m*100,1)+'%</td></tr></table></div><p>'+reg+'</p>'+(out?'<p><span class="flagt">Check with a doctor:</span> '+out+' of your cycles were shorter than 21 or longer than 35 days.</p>':'')+trend+
-  cycleBars(done.map(c=>sh(c.s)),L,m,n>=3?s:0)+'<p class="mut" style="font-size:13px">Each bar is one completed cycle (labelled with its first day). The dashed line is your mean; the green band is one standard deviation around it, where about two thirds of your cycles fall if they vary randomly.</p>';
+  cycleBars(done.map(c=>shy(c.s)),L,m,n>=3?s:0)+'<p class="mut" style="font-size:13px">Each bar is one completed cycle (labelled with its first day). The dashed line is your mean; the green band is one standard deviation around it, where about two thirds of your cycles fall if they vary randomly.</p>';
   bul.push('Your average cycle is <b>'+rd(m,1)+' days</b> (SD '+rd(s,1)+', range '+mn+' to '+mx+').')}
  h+=card('1. Cycle length',cyc);
 
@@ -766,13 +768,13 @@ function anaSections(){analyze();const [RA,RB]=anRange(),C=cycleRecs().filter(c=
  /* period length and flow */
  let pf='';
  if(C.length>=1){const pls=C.map(c=>c.pl),fls=C.map(c=>c.flow);
-  pf='<p>Average period length: <b>'+rd(ST.mean(pls),1)+' days</b> (range '+Math.min(...pls)+' to '+Math.max(...pls)+'). The “flow score” adds up your logged bleeding days: light = 1, moderate = 2, heavy = 3. It is a simple way to compare periods, not a measurement of blood loss.</p><div class="two"><div><b>Period length (days)</b>'+bars(C.map(c=>sh(c.s)),pls,'#C2284F')+'</div><div><b>Flow score</b>'+bars(C.map(c=>sh(c.s)),fls,'#E0558B')+'</div></div>'+(C.some(c=>c.pl>8)?'<p><span class="flagt">Check with a doctor:</span> at least one period lasted more than 8 days.</p>':'');
+  pf='<p>Average period length: <b>'+rd(ST.mean(pls),1)+' days</b> (range '+Math.min(...pls)+' to '+Math.max(...pls)+'). The “flow score” adds up your logged bleeding days: light = 1, moderate = 2, heavy = 3. It is a simple way to compare periods, not a measurement of blood loss.</p><div><div><b>Period length (days)</b>'+bars(C.map(c=>shy(c.s)),pls,'#C2284F')+'</div><div><b>Flow score</b>'+bars(C.map(c=>shy(c.s)),fls,'#E0558B')+'</div></div>'+(C.some(c=>c.pl>8)?'<p><span class="flagt">Check with a doctor:</span> at least one period lasted more than 8 days.</p>':'');
   bul.push('Your periods last about <b>'+rd(ST.mean(pls),1)+' days</b>.')}
  else pf='<p class="mut">No periods logged yet.</p>';
  h+=card('3. Period length and flow',pf);
 
  /* per-cycle table + csv */
- h+=card('4. Cycle-by-cycle table','<div class="tw"><table><tr><th>Cycle start</th><th>Length</th><th>Period</th><th>Flow score</th><th>Highest cramps</th><th>Symptoms logged</th><th>Ovulation (temperature)</th><th>Luteal length</th></tr>'+C.map(c=>'<tr><td>'+dstr(c.s)+'</td><td>'+(c.len?c.len+' d':'in progress')+'</td><td>'+c.pl+' d</td><td>'+c.flow+'</td><td>'+(c.maxCr===null?'–':c.maxCr+'/10')+'</td><td>'+c.sx+'</td><td>'+(c.sh?'day '+c.sh.ovDay:'–')+'</td><td>'+(c.lut?c.lut+' d':'–')+'</td></tr>').join('')+'</table></div><p><button class="btn alt" id="anaCsv">Download this table (CSV)</button></p>');
+ h+=card('4. Cycle-by-cycle table','<div class="tw"><table><tr><th>Cycle start</th><th>Length</th><th>Period</th><th>Flow score</th><th>Highest cramps</th><th>Symptoms logged</th><th>Ovulation (temperature)</th><th>Luteal length</th></tr>'+C.map(c=>'<tr><td>'+dstr(c.s)+'</td><td>'+(c.len?c.len+' d':'in progress')+'</td><td>'+c.pl+' d</td><td>'+c.flow+'</td><td>'+(c.maxCr===null?'–':c.maxCr+'/10')+'</td><td>'+c.sx+'</td><td>'+(c.sh?'day '+c.sh.ovDay:'–')+'</td><td>'+(c.lut?c.lut+' d':'–')+'</td></tr>').join('')+'</table></div>');
 
  /* pain */
  const byDay={},byPh={men:[],fol:[],ovu:[],lut:[]};ks.forEach(k=>{const e=data[k],p=phaseOf(num(k)),v=V.cramp.f(e);if(v===null||!p)return;(byDay[p.k]=byDay[p.k]||[]).push(v);byPh[p.ph].push(v)});
@@ -837,7 +839,7 @@ function wireAna(x){const el=$('#t-ana'),g=id=>el.querySelector(id);
  if(g('#toSex'))g('#toSex').onclick=()=>{showTab('learn');learn('sex')};
  if(!x)return;
  if(g('#sp')){const f=()=>{const p=x.pr[+g('#sp').value];g('#spc').innerHTML=scatter(p.xs,p.ys,V[p.a].n,V[p.b].n)};g('#sp').onchange=f;f()}
- if(g('#tsel')){const f=()=>{g('#tcc').innerHTML=tempChart(x.TC[+g('#tsel').value])};g('#tsel').onchange=f;f()}
+ if(g('#tsel')){const f=()=>{g('#tcc').innerHTML=tempChart(x.TC[+g('#tsel').value]);anaDownloads(g('#tcc'))};g('#tsel').onchange=f;f()}
  if(g('#anaCsv'))g('#anaCsv').onclick=()=>{const q=v=>'"'+String(v).replace(/"/g,'""')+'"',rows=[['Cycle start','Length (days)','Period (days)','Flow score','Highest cramps','Symptoms logged','Ovulation day (temperature)','Luteal length (days)']].concat(x.C.map(c=>[key(fromNum(c.s)),c.len||'',c.pl,c.flow,c.maxCr===null?'':c.maxCr,c.sx,c.sh?c.sh.ovDay:'',c.lut||'']));dl('\ufeff'+rows.map(r=>r.map(q).join(',')).join('\n'),'cycle-analysis.csv','text/csv')}}
 function statsReport(){const C=cycleRecs().filter(c=>c.ok),L=C.map(c=>c.len),demo=Object.keys(data).some(k=>data[k].demo);
  return(demo?'<p><b>Note: this log contains made-up example data.</b></p>':'')+(L.length>=2?'<p><b>Statistics from the log:</b> '+L.length+' completed cycles · mean cycle '+rd(ST.mean(L),1)+' days (SD '+rd(ST.sd(L),1)+', range '+Math.min(...L)+' to '+Math.max(...L)+') · mean period '+rd(ST.mean(cycleRecs().map(c=>c.pl)),1)+' days.</p>':'')}
@@ -962,7 +964,19 @@ function analysis(){const el=$('#t-ana'),all=Object.keys(data).sort(),demo=all.f
  el.querySelectorAll('[data-top]').forEach(b=>b.onclick=()=>{AZ.topic=b.dataset.top;analysis();$('#anaOut').scrollIntoView({behavior:'smooth',block:'start'})});
  el.querySelectorAll('[data-st]').forEach(s=>s.onchange=()=>{AZ[s.dataset.st]=s.value;analysis()});
  el.querySelectorAll('[data-pair]').forEach(b=>b.onclick=()=>{const q=b.dataset.pair.split(',');AZ.x=q[0];AZ.y=q[1];analysis();$('#anaOut').scrollIntoView({block:'start'})});
- wireAna({pr:R.pr||[],TC:R.TC||[],C:R.C,done:R.done||[]})}
+ wireAna({pr:R.pr||[],TC:R.TC||[],C:R.C,done:R.done||[]});anaDownloads($('#anaOut'))}
+/* ===== downloads: every chart as PNG, every table as CSV ===== */
+function svgPng(sv,name){const vb=sv.viewBox.baseVal,w=vb.width,h=vb.height,c=sv.cloneNode(true);c.setAttribute('xmlns','http://www.w3.org/2000/svg');c.setAttribute('width',w);c.setAttribute('height',h);c.removeAttribute('style');
+ const u=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(c)],{type:'image/svg+xml'})),im=new Image();
+ im.onload=()=>{const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);
+  cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click()},'image/png')};
+ im.onerror=()=>alert('This browser could not create the image.');im.src=u}
+function tableCsv(t,name){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+ dl('\ufeff'+[...t.querySelectorAll('tr')].map(r=>[...r.children].map(c=>q(c.querySelector('button')?'':c.textContent.replace(/\s+/g,' ').trim())).join(',')).join('\n'),name,'text/csv')}
+function anaDownloads(root){if(!root)return;const nm='my-cycle-'+AZ.topic,add=(host,label,fn)=>{if(host.nextElementSibling&&host.nextElementSibling.classList.contains('dlb'))return;
+  const b=document.createElement('button');b.type='button';b.className='chip noprint dlb';b.style.margin='4px 0 12px';b.textContent=label;b.onclick=fn;host.insertAdjacentElement('afterend',b)};
+ root.querySelectorAll('svg[role=img]').forEach((sv,i)=>{const p=sv.parentNode,host=p.classList.contains('tw')&&p.children.length===1?p:sv;add(host,'⬇ Download chart (PNG)',()=>svgPng(sv,nm+'-chart-'+(i+1)+'.png'))});
+ root.querySelectorAll('table').forEach((t,i)=>{const p=t.parentNode,host=p.classList.contains('tw')?p:t;add(host,'⬇ Download table (CSV)',()=>tableCsv(t,nm+'-table-'+(i+1)+'.csv'))})}
 
 const s=sessionStorage.getItem('cm_s');if(s&&ld(K,{})[s]){user=s;data=ld('cm_d_'+s,{});prof=ld('cm_p_'+s,{});cons=ld('cm_c_'+s,[]);start()}
 </script></body></html>

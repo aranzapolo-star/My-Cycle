@@ -99,13 +99,13 @@ footer.foot{font-size:13px;color:var(--mut);text-align:center;margin:24px 0 8px}
 <div class="legend" id="legend"></div>
 <p style="font-size:13px;color:var(--mut);margin:0">Tap a day to log how you feel. Tap a phase to learn what it means. Dashed border = predicted days.</p>
 </div>
-<div id="phtip" class="card" style="margin-top:14px"></div></section><section id="t-ins" hidden></section><section id="t-ana" hidden></section><section id="t-learn" hidden></section><section id="t-health" hidden></section>
+<div id="phtip" class="card" style="margin-top:14px"></div></section><section id="t-today" hidden></section><section id="t-ins" hidden></section><section id="t-ana" hidden></section><section id="t-learn" hidden></section><section id="t-health" hidden></section>
 </div>
 <footer class="foot">Information is based on WHO, UNICEF and PubMed-indexed sources (see Learn › Glossary &amp; sources). Drawings are original illustrations made for this project. For education only, not medical advice.</footer></div>
 
 <div class="modal" id="m"><div class="box" id="box"></div></div>
 <div class="modal" id="rep"><div class="box wide" id="repbox"></div></div>
-<input type="file" id="file" accept=".json" style="display:none">
+<input type="file" id="file" accept=".json" style="display:none"><input type="file" id="csvf" accept=".csv,.txt,text/csv" style="display:none">
 
 <script>
 const $=s=>document.querySelector(s);
@@ -157,7 +157,7 @@ function forgotModal(){
   const salt=rand(),rs=rand(),code=genCode();us[u].salt=salt;us[u].h=await hash(p,salt);us[u].rs=rs;us[u].rc=await hash(norm(code),rs);sv(K,us);
   $('#u').value=u;$('#p').value='';$('#err').textContent='';showCode(code,'Password changed. Here is your new recovery code')}}
 $('#forgot').onclick=e=>{e.preventDefault();forgotModal()};
-function start(){migrate();$('#auth').style.display='none';$('#app').style.display='block';$('#hi').textContent='Hi, '+user.split('@')[0];draw();showTab(prof.age?'cal':'health')}
+function start(){migrate();$('#auth').style.display='none';$('#app').style.display='block';$('#hi').textContent='Hi, '+user.split('@')[0];draw();showTab(prof.age||Object.keys(data).length?'today':'health')}
 $('#login').onclick=()=>auth(false);$('#reg').onclick=()=>auth(true);
 $('#bOut').onclick=()=>{sessionStorage.removeItem('cm_s');location.reload()};
 $('#p').onkeydown=e=>{if(e.key==='Enter')auth(false)};
@@ -262,7 +262,7 @@ $('#bRep').onclick=()=>{analyze();const R=rows(),strong=R.filter(r=>+r.cr>=7).le
  $('#repbox').innerHTML='<div class="noprint"><button class="btn" onclick="window.print()">Print or save as PDF</button> <button class="btn alt" id="csv">Download Excel (CSV)</button> <button class="btn g" onclick="$(\'#rep\').classList.remove(\'open\')">Close</button></div>'+
  '<h2 style="margin-top:14px">Menstrual cycle log</h2><p>Generated on '+new Date().toLocaleDateString(LOC,{dateStyle:'long'})+'. Information logged by the person who keeps this log; this is not a diagnosis.</p>'+
  '<p><b>Summary:</b> last period logged: '+last+' · estimated average cycle: '+A.L+' days · average period length: '+A.P+' days · period starts logged: '+A.starts.length+' · days with cramps 7 or higher: '+strong+' · days logged: '+R.length+'.</p>'+
- statsReport()+visitsHtml()+(R.length?'<div class="tw"><table><tr><th>Date</th><th>Cycle day</th><th>Phase</th><th>Bleeding</th><th>Cramps (0-10)</th><th>Symptoms</th><th>Energy</th><th>Medication</th><th>Notes</th></tr>'+R.map(r=>'<tr><td>'+fmt(r.k)+'</td><td>'+r.cd+'</td><td>'+r.ph+'</td><td>'+esc(r.bl)+'</td><td>'+r.cr+'</td><td>'+esc(r.sx)+'</td><td>'+esc(r.en)+'</td><td>'+esc(r.md)+'</td><td>'+esc(r.nt)+'</td></tr>').join('')+'</table></div>':'<p>No days logged yet.</p>');
+ statsReport()+reportExtras()+visitsHtml()+(R.length?'<div class="tw"><table><tr><th>Date</th><th>Cycle day</th><th>Phase</th><th>Bleeding</th><th>Cramps (0-10)</th><th>Symptoms</th><th>Energy</th><th>Medication</th><th>Notes</th></tr>'+R.map(r=>'<tr><td>'+fmt(r.k)+'</td><td>'+r.cd+'</td><td>'+r.ph+'</td><td>'+esc(r.bl)+'</td><td>'+r.cr+'</td><td>'+esc(r.sx)+'</td><td>'+esc(r.en)+'</td><td>'+esc(r.md)+'</td><td>'+esc(r.nt)+'</td></tr>').join('')+'</table></div>':'<p>No days logged yet.</p>');
  $('#rep').classList.add('open');
  $('#csv').onclick=()=>{const q=v=>'"'+String(v).replace(/"/g,'""')+'"',L=[['Date','Cycle day','Phase','Bleeding','Cramps','Symptoms','Energy','Medication','Notes'].map(q).join(',')].concat(R.map(r=>[r.k,r.cd,r.ph,r.bl,r.cr,r.sx,r.en,r.md,r.nt].map(q).join(',')));dl('\ufeff'+L.join('\n'),'cycle-report.csv','text/csv')}};
 function dl(t,n,ty){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:ty}));a.download=n;a.click()}
@@ -297,11 +297,11 @@ const T=[['Your cycle starts on day 1','The first day of real bleeding is day 1.
 ['Food and rest','Good sleep, movement, water and iron-rich foods (lentils, spinach, red meat) can help you feel better during your period.']];
 /* ---------- v2: tabs ---------- */
 O.bc=['Pill','Patch','Ring','IUD','Implant','Injection','Condom','None','Other'];
-const TABS=[['cal','Calendar'],['ins','Insights'],['ana','Analysis'],['learn','Learn'],['health','My health']];
+const TABS=[['today','Today'],['cal','Calendar'],['ins','Insights'],['ana','Analysis'],['learn','Learn'],['health','My health']];
 function showTab(t){TABS.forEach(x=>$('#t-'+x[0]).hidden=x[0]!==t);
  $('#tabs').innerHTML=TABS.map(x=>'<button class="chip'+(x[0]===t?' on':'')+'" data-t="'+x[0]+'">'+x[1]+'</button>').join('');
  $('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
- if(t==='cal')phTip();if(t==='ins')insights();if(t==='ana')analysis();if(t==='learn')learn();if(t==='health')health()}
+ if(t==='today')todayTab();if(t==='cal')phTip();if(t==='ins')insights();if(t==='ana')analysis();if(t==='learn')learn();if(t==='health')health()}
 function tag(k){let t='';if(prof.sti===k)t+='<span class="tg">STI test</span>';if(prof.pap===k)t+='<span class="tg">Cervical test</span>';if(prof.papNext===k)t+='<span class="tg">Test due</span>';if(cons.some(c=>c.date===k))t+='<span class="tg">Doctor</span>';return t}
 const sh=n=>fromNum(n).toLocaleDateString(LOC,{month:'short',day:'numeric'});
 
@@ -958,7 +958,7 @@ function analysis(){const el=$('#t-ana'),all=Object.keys(data).sort(),demo=all.f
   (all.length?'<p class="mut" style="margin:0">'+dstr(ra)+' to '+dstr(rb)+' · <b>'+ks.length+'</b> logged days · <b>'+(R.done||[]).length+'</b> complete cycles</p>':'')+
   '<h4>Step 2 · What do you want to see?</h4><div class="tg2">'+TOP.map(t=>'<button class="tcard'+(t[0]===AZ.topic?' on':'')+'" data-top="'+t[0]+'"><b>'+t[1]+'</b><span>'+t[2]+'</span></button>').join('')+'</div>');
  const cur=TOP.find(t=>t[0]===AZ.topic);
- h+=lcard(cur[1],!all.length?'<p class="mut">Log some days first, or load the example data above.</p>':!ks.length?'<p class="mut">No logged days in this period. Choose another period in step 1.</p>':BODY[AZ.topic](R,ks),' id="anaOut"');
+ h+=lcard(cur[1],!all.length?'<p class="mut">Log some days first, or load the example data above.</p>':(!ks.length&&AZ.topic!=='cmp'&&AZ.topic!=='dq')?'<p class="mut">No logged days in this period. Choose another period in step 1.</p>':BODY[AZ.topic](R,ks),' id="anaOut"');
  if(all.length&&S['How these numbers are calculated'])h+='<details class="noprint"><summary>How these numbers are calculated</summary>'+S['How these numbers are calculated'][1]+'</details>';
  el.innerHTML=h;
  el.querySelectorAll('[data-top]').forEach(b=>b.onclick=()=>{AZ.topic=b.dataset.top;analysis();$('#anaOut').scrollIntoView({behavior:'smooth',block:'start'})});
@@ -977,6 +977,115 @@ function anaDownloads(root){if(!root)return;const nm='my-cycle-'+AZ.topic,add=(h
   const b=document.createElement('button');b.type='button';b.className='chip noprint dlb';b.style.margin='4px 0 12px';b.textContent=label;b.onclick=fn;host.insertAdjacentElement('afterend',b)};
  root.querySelectorAll('svg[role=img]').forEach((sv,i)=>{const p=sv.parentNode,host=p.classList.contains('tw')&&p.children.length===1?p:sv;add(host,'⬇ Download chart (PNG)',()=>svgPng(sv,nm+'-chart-'+(i+1)+'.png'))});
  root.querySelectorAll('table').forEach((t,i)=>{const p=t.parentNode,host=p.classList.contains('tw')?p:t;add(host,'⬇ Download table (CSV)',()=>tableCsv(t,nm+'-table-'+(i+1)+'.csv'))})}
+/* ===== v4: Today panel, calendar export, CSV import + data check, compare two periods, report charts ===== */
+Object.assign(AZ,{cmp:'year',cv:'cramp',sp:'',c1a:'',c1b:'',c2a:'',c2b:''});
+TOP.push(['cmp','Compare two periods','Is a difference real or chance?'],['dq','Data check','Gaps, odd values, reliability']);
+const todayK=()=>key(new Date()),SY=e=>[...(e.emo||[]),...(e.phys||[])];
+function nextPeriod(){analyze();const t=num(todayK()),f=A.all.find(x=>x.s>t);return f?f.s:null}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act]');if(!b)return;const f={imp:()=>$('#csvf').click(),tpl:csvTemplate,ics:exportIcs,log:()=>openDay(todayK())}[b.dataset.act];if(f)f()});
+/* ---- Today ---- */
+function todayTab(){const el=$('#t-today'),tk=todayK(),t=num(tk);analyze();const ks=Object.keys(data).sort();
+ if(!A.hasData){el.innerHTML=lcard('Today','<p>Log the first day of your last period, or import your history, and this page will show where you are in your cycle, what to expect and when your next period is due.</p><p><button class="btn" data-act="log">Log today</button> <button class="btn alt" data-act="imp">Import a CSV</button> <button class="btn alt" data-act="tpl">CSV template</button> <button class="btn g" id="tdDemo">Try example data</button></p>');const d=$('#tdDemo');if(d)d.onclick=()=>{demoData();draw();todayTab()};return}
+ const p=phaseOf(t),e=data[tk]||{},L=cycleRecs().filter(c=>c.ok).map(c=>c.len),s1=L.length>=3?Math.max(1,Math.round(ST.sd(L))):2,last=ks.length?t-num(ks[ks.length-1]):99,
+  ls=A.starts[A.starts.length-1],exp=ls+A.L,late=t-exp,np=late>0?exp:nextPeriod(),d=np?np-t:null;
+ let top=[],cr=null;
+ if(p){const cnt={},cv=[];let N=0;ks.forEach(k=>{if(k===tk)return;const q=phaseOf(num(k));if(!q||q.ph!==p.ph)return;N++;SY(data[k]).forEach(s=>cnt[s]=(cnt[s]||0)+1);const c=data[k].cramp;if(c!==undefined&&c!=='')cv.push(+c)});
+  top=Object.entries(cnt).filter(x=>x[1]>=3&&x[1]/N>=.25).sort((a,b)=>b[1]-a[1]).slice(0,5).map(x=>[x[0],Math.round(x[1]/N*100)]);cr=cv.length>=5?ST.mean(cv):null}
+ const fert=p&&p.k>=p.ov-5&&p.k<=p.ov+1,flags=patterns().filter(x=>x.includes('flagt')).slice(0,3);
+ let h=lcard('Today · '+new Date().toLocaleDateString(LOC,{weekday:'long',month:'long',day:'numeric'}),
+  (p?'<p style="font-size:18px;margin:0 0 6px"><span class="lg" style="background:'+PH[p.ph][1]+'"></span><b>'+PH[p.ph][0]+'</b> · cycle day <b>'+p.k+'</b>'+(p.pred?' (predicted)':'')+'</p><p style="margin:0 0 8px">'+PH[p.ph][2]+'</p>':'<p>Your last logged cycle has ended. Log the start of your new period to continue.</p>')+
+  (fert?call('<b>Estimated fertile window.</b> Pregnancy is more likely now. This estimate is not birth control.','amber'):'')+
+  (np?'<p><b>Next period:</b> expected around <b>'+dstr(np)+'</b> ('+(d>0?'in '+d+' day'+(d===1?'':'s'):d===0?'today':Math.abs(d)+' day(s) later than expected, which can simply be a longer cycle')+'). Most likely between '+dstr(np-s1)+' and '+dstr(np+s1)+'.</p>':'')+
+  (last>=2?call('<b>'+(last>=99?'No days logged yet.':'You have not logged for '+last+' days.')+'</b> Logging a few days a week keeps your predictions accurate.','blue'):(!data[tk]?'<p class="mut">You have not logged today yet.</p>':''))+
+  '<p><button class="btn" data-act="log">'+(data[tk]?'Edit today':'Log today')+'</button> <button class="btn alt" data-act="ics">⬇ Add reminders to my calendar</button> <button class="btn alt" data-act="imp">Import CSV</button></p>');
+ h+=lcard('What is usual for you in this phase',top.length?'<p>Based on your own log. Tap a symptom to add it to today.</p><div class="legend">'+top.map(x=>'<button class="chip'+(SY(e).includes(x[0])?' on':'')+'" data-q="'+esc(x[0])+'">'+esc(x[0])+' · '+x[1]+'%</button>').join('')+'</div>'+(cr!==null?'<p>Usual cramp level in this phase: <b>'+rd(cr,1)+' / 10</b>.</p>':'')+'<p class="mut" style="font-size:13px;margin:0">The percentage is the share of days in this phase on which you logged that symptom.</p>':'<p class="mut">Not enough history for this phase yet. It needs a few logged days in it.</p>');
+ if(flags.length)h+=lcard('Worth mentioning to a doctor',flags.map(x=>'<div class="flag">'+x+'</div>').join(''));
+ el.innerHTML=h;
+ el.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{const s=b.dataset.q,kind=O.emo.includes(s)?'emo':'phys',en=data[tk]=data[tk]||{},a=en[kind]=en[kind]||[],i=a.indexOf(s);if(i>=0)a.splice(i,1);else a.push(s);if(!a.length)delete en[kind];if(!Object.keys(en).length)delete data[tk];sv('cm_d_'+user,data);draw();todayTab()})}
+/* ---- calendar export (.ics) ---- */
+function exportIcs(){analyze();if(!A.hasData){alert('Log at least one period first so there is something to predict.');return}
+ const t=num(todayK()),ev=[],X=s=>String(s).replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n'),D=n=>{const d=fromNum(n);return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')},
+  add=(id,a,b,title,desc,al)=>ev.push(['BEGIN:VEVENT','UID:'+id+'@my-cycle.local','DTSTAMP:'+new Date().toISOString().replace(/[-:]|\.\d+/g,''),'DTSTART;VALUE=DATE:'+D(a),'DTEND;VALUE=DATE:'+D(b+1),'SUMMARY:'+X(title),'DESCRIPTION:'+X(desc)].concat(al?['BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+X(title),'TRIGGER:-P2D','END:VALARM']:[],['END:VEVENT']).join('\r\n'));
+ const LU=A.LUT||14,pr=A.all.filter(x=>x.pred&&x.s>t).slice(0,4);
+ pr.forEach(x=>{add('p'+x.s,x.s,x.s,'Period expected','Estimated from your average cycle of '+A.L+' days. A guide, not a certainty.',1);const o=x.s-LU;if(o+1>=t)add('f'+x.s,o-5,o+1,'Estimated fertile window','Estimate only. It is not birth control.',0)});
+ if(prof.papNext&&num(prof.papNext)>=t)add('pap',num(prof.papNext),num(prof.papNext),'Cervical screening due','Reminder from My Cycle.',1);
+ cons.filter(c=>num(c.date)>=t).forEach((c,i)=>add('v'+i+c.date,num(c.date),num(c.date),'Doctor visit'+(c.doc?': '+c.doc:''),'Reminder from My Cycle.',1));
+ dl(['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//My Cycle//EN','CALSCALE:GREGORIAN'].concat(ev,['END:VCALENDAR']).join('\r\n')+'\r\n','my-cycle-reminders.ics','text/calendar');
+ $('#box').innerHTML='<h2>Calendar file downloaded</h2><p><b>my-cycle-reminders.ics</b> has <b>'+ev.length+'</b> reminders: your next periods (with an alert 2 days before), estimated fertile windows, your cervical screening and your doctor visits.</p><p>Open the file to add it to Google Calendar, Apple Calendar or Outlook. Predictions change as you log more cycles, so <b>download a fresh file</b> now and then.</p><button class="btn" onclick="closeM()">Got it</button>';$('#m').classList.add('open')}
+/* ---- CSV import with validation ---- */
+const CSVH={date:/^(date|day|fecha)$/i,flow:/^(bleeding|flow)/i,cramp:/^cramp/i,temp:/^(basal )?temp/i,wt:/^weight/i,sleep:/^sleep/i,stress:/^stress/i,mood:/^mood/i,ex:/^exercise/i,note:/^note/i};
+function parseCsv(txt){txt=txt.replace(/^\ufeff/,'');const l0=txt.split('\n')[0],d=(l0.match(/;/g)||[]).length>(l0.match(/,/g)||[]).length?';':',',R=[];let r=[],c='',q=false;
+ for(let i=0;i<txt.length;i++){const ch=txt[i];if(q){if(ch==='"'){if(txt[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===d){r.push(c);c=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&txt[i+1]==='\n')i++;r.push(c);c='';if(r.some(x=>x.trim()))R.push(r);r=[]}else c+=ch}
+ r.push(c);if(r.some(x=>x.trim()))R.push(r);return R}
+function parseDate(s){s=s.trim();let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(!m){m=s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/);if(m)m=[0,m[3],m[2],m[1]]}if(!m)return null;const y=+m[1],mo=+m[2],d=+m[3],dt=new Date(y,mo-1,d);return dt.getFullYear()===y&&dt.getMonth()===mo-1&&dt.getDate()===d?key(dt):null}
+function csvPlan(txt){const R=parseCsv(txt),o={days:{},rej:[],warn:[],dup:0,total:0};if(R.length<2){o.err='The file has no data rows.';return o}
+ const H=R[0].map(x=>x.trim()),ix={};Object.keys(CSVH).forEach(k=>ix[k]=H.findIndex(h=>CSVH[k].test(h)));
+ if(ix.date<0){o.err='No “Date” column found. The first row must contain column names and one of them must be “Date”.';return o}
+ const t=num(todayK());
+ R.slice(1).forEach((r,i)=>{o.total++;const ln=i+2,dk=parseDate(r[ix.date]||'');if(!dk){o.rej.push('Row '+ln+': date “'+(r[ix.date]||'').trim()+'” not recognised (use YYYY-MM-DD).');return}
+  if(num(dk)>t){o.rej.push('Row '+ln+': '+dk+' is in the future.');return}
+  const g=k=>ix[k]>=0?(r[ix[k]]||'').trim():'',e={},w=m=>o.warn.push('Row '+ln+' ('+dk+'): '+m),f=g('flow').split(/[ ,]/)[0].toLowerCase();
+  if(f){if(['spotting','light','moderate','heavy'].includes(f))e.bleed={flow:f,amount:'',color:'',clots:'',change:''};else w('bleeding “'+g('flow')+'” ignored (use spotting, light, moderate or heavy).')}
+  const nm=(k,lo,hi,lab,int)=>{const v=g(k).replace(',','.');if(v==='')return;const x=+v;if(isNaN(x)||x<lo||x>hi||(int&&x%1))w(lab+' “'+g(k)+'” ignored (expected '+lo+' to '+hi+').');else e[k]=String(x)};
+  nm('cramp',0,10,'cramps',1);nm('temp',35,38.5,'temperature');nm('wt',25,300,'weight');nm('sleep',0,16,'sleep');nm('stress',0,10,'stress',1);nm('mood',1,5,'mood',1);nm('ex',0,600,'exercise');
+  if(g('note'))e.note=g('note').slice(0,500);
+  if(!Object.keys(e).length){w('no usable values, row skipped.');return}
+  if(o.days[dk]){o.dup++;Object.assign(o.days[dk],e)}else o.days[dk]=e});
+ return o}
+const csvTemplate=()=>dl('Date,Bleeding,Cramps,Basal temperature,Weight,Sleep,Stress,Mood,Exercise,Notes\n2026-01-03,moderate,5,36.4,63.2,7,4,3,20,example row\n2026-01-04,light,3,36.4,,6.5,5,3,0,\n','my-cycle-import-template.csv','text/csv');
+function csvImportUI(txt){const P=csvPlan(txt),ks=Object.keys(P.days).sort(),n=ks.length,bx=$('#box'),flag=(t,a,c)=>a.length?'<div class="flag"'+(c?' style="border-color:var(--ovu);background:#FFF1D6"':'')+'><b>'+a.length+' '+t+'</b><br>'+a.slice(0,8).map(esc).join('<br>')+(a.length>8?'<br>…':'')+'</div>':'';
+ if(P.err){bx.innerHTML='<h2>Cannot import</h2><p>'+esc(P.err)+'</p><p><button class="btn alt" data-act="tpl">Download a CSV template</button> <button class="btn" onclick="closeM()">Close</button></p>';$('#m').classList.add('open');return}
+ const ex=ks.filter(k=>data[k]).length;
+ bx.innerHTML='<h2>Check before importing</h2><p>Rows read: <b>'+P.total+'</b> · days to import: <b>'+n+'</b> ('+(n-ex)+' new, '+ex+' already in your log: these are <b>merged</b> and your existing values are kept)'+(P.dup?' · repeated dates in the file: '+P.dup+' (combined)':'')+'.</p>'+(n?'<p class="mut">Dates from '+fmt(ks[0])+' to '+fmt(ks[n-1])+'.</p>':'')+flag('row(s) rejected',P.rej)+flag('value(s) ignored',P.warn,1)+
+  '<p><button class="btn" id="cgo"'+(n?'':' disabled')+'>Import '+n+' day(s)</button> <button class="btn g" onclick="closeM()">Cancel</button></p><p class="mut" style="font-size:13px">Nothing is saved until you press Import. Dates are read as YYYY-MM-DD or DD/MM/YYYY. After importing you will see the Data check.</p>';
+ $('#m').classList.add('open');
+ $('#cgo').onclick=()=>{ks.forEach(k=>{data[k]=Object.assign({},P.days[k],data[k]||{})});sv('cm_d_'+user,data);closeM();draw();AZ.topic='dq';AZ.range='all';showTab('ana')}}
+$('#csvf').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const r=new FileReader();r.onload=()=>csvImportUI(String(r.result));r.readAsText(f)};
+/* ---- Data check ---- */
+function topDq(){analyze();const ks=Object.keys(data).sort(),n=ks.length;if(!n)return'<p class="mut">No data yet.</p>';
+ const first=num(ks[0]),span=num(ks[n-1])-first+1,cov=n/span,I=[],ck=(ok,t)=>I.push([ok,t]),gaps=[];
+ for(let i=1;i<n;i++){const g=num(ks[i])-num(ks[i-1])-1;if(g>=14)gaps.push([g,ks[i-1]])}gaps.sort((a,b)=>b[0]-a[0]);
+ const badT=ks.filter(k=>data[k].temp&&(+data[k].temp<35||+data[k].temp>38.5)).length,
+  badW=ks.filter((k,i)=>{const w=data[k].wt;if(!w)return false;const pv=ks.slice(0,i).reverse().find(q=>data[q].wt&&num(k)-num(q)<=14);return +w<25||+w>300||(pv&&Math.abs(+w-+data[pv].wt)>5)}).length,
+  Cx=cycleRecs(),good=Cx.filter(c=>c.ok).length,odd=Cx.filter(c=>c.len&&!c.ok).length,tdays=ks.filter(k=>data[k].temp).length;
+ ck(cov>=.6,'<b>'+Math.round(cov*100)+'%</b> of the days between your first and last entry have something logged ('+n+' of '+span+' days).');
+ ck(!gaps.length,gaps.length?'<b>'+gaps.length+' gap(s) of 14 days or more.</b> Longest: '+gaps[0][0]+' days after '+fmt(gaps[0][1])+'.':'No gaps of 14 days or more.');
+ ck(!odd,odd?'<b>'+odd+' stretch(es) between periods were ignored</b> because they were shorter than 15 or longer than 60 days. Usually a period start was not logged.':'All gaps between period starts are plausible (15 to 60 days).');
+ ck(!badT,badT?'<b>'+badT+' temperature value(s)</b> outside 35 to 38.5 °C. They are ignored in the ovulation estimate.':'All temperatures are plausible.');
+ ck(!badW,badW?'<b>'+badW+' weight value(s)</b> changed more than 5 kg in two weeks or are out of range. Check for typing mistakes.':'No suspicious weight jumps.');
+ ck(good>=6,'<b>'+good+' complete cycle(s)</b> available. Six or more give solid statistics.');
+ const lv=good<3||cov<.4?['Low','bad']:good<6||cov<.6?['Moderate','warn']:['Good','ok'];
+ return '<div class="bk '+lv[1]+'" role="status"><div><b>Reliability of your analysis: '+lv[0]+'.</b> '+(lv[0]==='Good'?'You have enough complete cycles and regular logging for dependable numbers.':lv[0]==='Moderate'?'Results are useful but still rough. More cycles and fewer gaps will improve them.':'There is too little or too sparse data. Treat every number as a very rough guide.')+'</div><div class="bkbtn"><button class="btn" data-act="imp">Import CSV</button><button class="btn alt" data-act="tpl">CSV template</button></div></div>'+
+  '<div class="tw"><table><tr><th>OK?</th><th>Check</th></tr>'+I.map(x=>'<tr><td class="'+(x[0]?'yes':'no')+'">'+(x[0]?'✔':'⚠')+'</td><td>'+x[1]+'</td></tr>').join('')+'</table></div><p class="mut" style="margin:8px 0 0">Days with basal temperature: '+tdays+'. Days with cramps: '+ks.filter(k=>data[k].cramp!==undefined).length+'.</p>'+
+  hp('Statistics are only as good as the data behind them. <b>Gaps</b> make the page think a cycle was longer than it was. <b>Impossible values</b>, like a temperature of 31 °C, are usually typing mistakes. <b>Few cycles</b> means the average can change a lot with each new cycle. Fixing ⚠ items makes every other chart more trustworthy.')}
+/* ---- Compare two periods ---- */
+const CMPV=()=>[['clen','Cycle length (days)'],['plen','Period length (days)']].concat(VK().map(k=>[k,V[k].n]));
+function cmpVals(a,b,v){if(v==='clen')return cycleRecs().filter(c=>c.ok&&c.s>=a&&c.s<=b).map(c=>c.len);if(v==='plen')return cycleRecs().filter(c=>c.s>=a&&c.s<=b).map(c=>c.pl);
+ const f=V[v].f,o=[];Object.keys(data).forEach(k=>{const q=num(k);if(q>=a&&q<=b){const x=f(data[k],phaseOf(q));if(x!==null&&!isNaN(x))o.push(x)}});return o}
+function cmpRanges(){const ks=Object.keys(data).sort(),first=num(ks[0]),last=num(ks[ks.length-1]),m=AZ.cmp,g=x=>x?num(x):null;
+ if(m==='recent')return[[last-179,last-90],[last-89,last]];if(m==='year')return[[last-729,last-365],[last-364,last]];
+ if(m==='custom')return[[g(AZ.c1a)||first,g(AZ.c1b)||first],[g(AZ.c2a)||last,g(AZ.c2b)||last]];
+ const sp=AZ.sp?num(AZ.sp):Math.round((first+last)/2);return[[first,sp-1],[sp,last]]}
+function permTest(x,y,N){let s=7;const rnd=()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},all=[...x,...y],nx=x.length,obs=Math.abs(ST.mean(x)-ST.mean(y));let c=0;
+ for(let i=0;i<N;i++){for(let j=all.length-1;j>0;j--){const k=Math.floor(rnd()*(j+1)),q=all[j];all[j]=all[k];all[k]=q}if(Math.abs(ST.mean(all.slice(0,nx))-ST.mean(all.slice(nx)))>=obs-1e-12)c++}return(c+1)/(N+1)}
+function topCmp(){const ks=Object.keys(data).sort();if(!ks.length)return'<p class="mut">No data yet.</p>';const[r1,r2]=cmpRanges(),v=AZ.cv,lab=(CMPV().find(q=>q[0]===v)||[0,''])[1],dI=(k,l)=>'<label>'+l+'<input type="date" data-st="'+k+'" value="'+esc(AZ[k])+'"></label>',sel=(k,o)=>o.map(q=>'<option value="'+q[0]+'"'+(q[0]===AZ[k]?' selected':'')+'>'+q[1]+'</option>').join('');
+ let h='<p>Compare an <b>earlier</b> period (Period 1) with a <b>later</b> one (Period 2) and see whether the difference is real or just chance. Useful to check, for example, what changed after starting a new contraceptive. This topic uses its own periods, not step 1.</p><div class="two2"><label>What to compare<select data-st="cv">'+sel('cv',CMPV())+'</select></label><label>Periods<select data-st="cmp">'+sel('cmp',[['year','Last 12 months vs the 12 before'],['recent','Last 3 months vs the 3 before'],['split','Before vs after a date'],['custom','Choose both periods']])+'</select></label></div>'+
+  (AZ.cmp==='split'?'<div class="two2">'+dI('sp','Date of the change')+'<span></span></div>':'')+(AZ.cmp==='custom'?'<div class="two2">'+dI('c1a','Period 1 from')+dI('c1b','Period 1 to')+dI('c2a','Period 2 from')+dI('c2b','Period 2 to')+'</div>':'')+'<p class="mut">Period 1: '+dstr(r1[0])+' to '+dstr(r1[1])+' · Period 2: '+dstr(r2[0])+' to '+dstr(r2[1])+'</p>';
+ const x=cmpVals(r1[0],r1[1],v),y=cmpVals(r2[0],r2[1],v),min=v==='clen'||v==='plen'?3:5;
+ if(x.length<min||y.length<min)return h+'<p class="mut">Not enough data: '+x.length+' value(s) in Period 1 and '+y.length+' in Period 2. At least '+min+' are needed in each. Choose other dates or another variable.</p>';
+ const mx=ST.mean(x),my=ST.mean(y),sx=ST.sd(x),sy=ST.sd(y),pooled=Math.sqrt(((x.length-1)*sx*sx+(y.length-1)*sy*sy)/(x.length+y.length-2))||1,d=(my-mx)/pooled,p=permTest(x,y,x.length+y.length>2000?1500:4000),sig=p<.05,mag=Math.abs(d)<.2?'tiny':Math.abs(d)<.5?'small':Math.abs(d)<.8?'medium':'large',ps=p<.001?'below 0.001':rd(p,3),out=Math.round(p*100);
+ h+='<div class="tw"><table><tr><th></th><th>Values</th><th>Average</th><th>Median</th><th>Spread (SD)</th></tr>'+[['Period 1',x,mx,sx],['Period 2',y,my,sy]].map(r=>'<tr><td><b>'+r[0]+'</b></td><td>'+r[1].length+'</td><td>'+rd(r[2],2)+'</td><td>'+rd(ST.med(r[1]),2)+'</td><td>'+rd(r[3],2)+'</td></tr>').join('')+'</table></div>'+
+  '<p>Difference in averages: <b>'+(my>=mx?'+':'−')+rd(Math.abs(my-mx),2)+'</b> · p-value: <b>'+ps+'</b> · effect size: <b>'+rd(Math.abs(d),2)+'</b> ('+mag+')</p>'+bars(['Period 1','Period 2'],[Math.round(mx*100)/100,Math.round(my*100)/100],'#7EC8E8')+'<p class="mut" style="font-size:13px">Average of '+esc(lab.toLowerCase())+' in each period.</p>'+
+  call('<b>What this means.</b> On average, '+lab.toLowerCase()+' in Period 2 is <b>'+rd(Math.abs(my-mx),2)+' '+(my>mx?'higher':'lower')+'</b> than in Period 1 ('+rd(my,2)+' vs '+rd(mx,2)+'). '+(sig?'This difference is <b>unlikely to be just chance</b>. If nothing had really changed, a gap this big would appear in only about '+out+' of every 100 random reshuffles of your data. The size of the change is <b>'+mag+'</b>.':'This difference <b>could easily be chance</b>. Even if nothing had changed, gaps like this appear in about '+out+' of every 100 random reshuffles of your data, so we cannot say something really changed.')+(v==='clen'||v==='plen'?'':' Days of the same cycle resemble each other, so treat the p-value as approximate.')+' A real difference does not tell you <b>why</b> it happened.','blue')+
+  hp('The <b>p-value</b> answers: “if nothing really changed, how often would I still see a difference this big?” Below 0.05 (5 in 100) is the usual line for “probably real”. We worked it out by shuffling your values between the two periods thousands of times. The <b>effect size</b> tells how big the change is compared with your normal ups and downs: tiny, small, medium or large. A result can be real but tiny.');
+ return h}
+/* ---- report for the doctor: charts + alerts ---- */
+function reportExtras(){const all=cycleRecs().slice(-12),C=all.filter(c=>c.ok),fl=patterns().filter(x=>x.includes('flagt')),np=nextPeriod(),cm=all.filter(c=>c.maxCr!==null);let h='';
+ if(C.length>=2){const L=C.map(c=>c.len);h+='<h3>Cycle length, last '+C.length+' cycles</h3>'+cycleBars(C.map(c=>shy(c.s)),L,ST.mean(L),L.length>=3?ST.sd(L):0)+'<p>Mean '+rd(ST.mean(L),1)+' days, SD '+rd(ST.sd(L),1)+', range '+Math.min(...L)+' to '+Math.max(...L)+'. Dashed line: mean. Green band: ±1 SD.</p>'}
+ if(all.length>=2)h+='<h3>Period length (days)</h3>'+bars(all.map(c=>shy(c.s)),all.map(c=>c.pl),'#C2284F');
+ if(cm.length>=2)h+='<h3>Highest cramp pain per cycle (0 to 10)</h3>'+bars(cm.map(c=>shy(c.s)),cm.map(c=>c.maxCr),'#E0558B');
+ return h+(np?'<p>Next period expected around '+dstr(np)+'.</p>':'')+'<h3>Alerts found in the log</h3>'+(fl.length?fl.map(x=>'<div class="flag">'+x+'</div>').join(''):'<p>No alerts found.</p>')}
+BODY.cmp=()=>topCmp();BODY.dq=()=>topDq();const fc0=BODY.fc;BODY.fc=(R,k)=>fc0(R,k)+'<p><button class="btn" data-act="ics">⬇ Add reminders to my calendar (.ics)</button></p>';
 
 const s=sessionStorage.getItem('cm_s');if(s&&ld(K,{})[s]){user=s;data=ld('cm_d_'+s,{});prof=ld('cm_p_'+s,{});cons=ld('cm_c_'+s,[]);start()}
 </script></body></html>

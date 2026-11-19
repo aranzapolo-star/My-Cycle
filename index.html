@@ -71,6 +71,7 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
 @media(max-width:520px){.tg2{grid-template-columns:1fr 1fr}}
 .tg2{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:8px}.tcard{text-align:left;background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px 12px}.tcard b{display:block;font-family:Georgia,serif;color:var(--red)}.tcard span{font-size:13px;color:var(--mut)}.tcard.on{border-color:var(--red);background:#FFE9ED}
 footer.foot{font-size:13px;color:var(--mut);text-align:center;margin:24px 0 8px}
+.day.band{background-image:linear-gradient(#C2284F1f,#C2284F1f);box-shadow:inset 0 0 0 1px #C2284F55}.day.band1{background-image:linear-gradient(#C2284F40,#C2284F40);box-shadow:inset 0 0 0 2px #C2284F99}
 </style></head><body>
 <div class="wrap">
 <div class="aviso"><b>Important:</b> this is a tracking and educational tool. <b>It does not replace medical care</b>, it does not diagnose, and its predictions are approximate. If you have severe pain, very heavy bleeding or any concern, please talk to a health professional.</div>
@@ -163,7 +164,8 @@ $('#bOut').onclick=()=>{sessionStorage.removeItem('cm_s');location.reload()};
 $('#p').onkeydown=e=>{if(e.key==='Enter')auth(false)};
 
 /* ---------- cycle analysis ---------- */
-function analyze(){
+let _ak=null;function analyze(){const k=user+'#'+Object.keys(data).filter(x=>data[x].bleed||data[x].temp).sort().map(x=>x+(data[x].bleed?data[x].bleed.flow:'')+(data[x].temp||'')).join('|');if(k===_ak&&A.all)return;_ak=k;analyze0()}
+function analyze0(){
  const bl=Object.keys(data).filter(k=>data[k].bleed&&BL.includes(data[k].bleed.flow)).map(num).sort((a,b)=>a-b);
  const groups=[];bl.forEach(n=>{const g=groups[groups.length-1];if(g&&n-g[g.length-1]<=2)g.push(n);else groups.push([n])});
  const starts=groups.map(g=>g[0]);
@@ -191,19 +193,20 @@ bleed:['Logged bleeding','var(--red)','Days when you logged light, moderate or h
 pred:['Predicted days','#fff','Dashed border: an estimate of your next period based on your previous cycles. The more days you log, the closer it gets. Cycles vary with stress, sleep, travel or health, so this is a guide, not a certainty.']};
 
 /* ---------- calendar ---------- */
-function draw(){analyze();const wrap=$('#months');wrap.innerHTML='';const today=key(new Date());
+function bandInfo(){const L=[];for(let i=1;i<A.starts.length;i++){const l=A.starts[i]-A.starts[i-1];if(l>=15&&l<=60)L.push(l)}if(L.length<2)return null;const md=[...L].sort((a,b)=>a-b)[L.length>>1],M=L.filter(l=>l<=1.5*md),t=num(key(new Date())),nx=A.all.find(x=>x.pred&&x.s>=t);if(!nx||M.length<2)return null;return{c:nx.s,s:Math.max(1,Math.round(ST.sd(M)))}}
+function draw(){analyze();const bd=bandInfo();const wrap=$('#months');wrap.innerHTML='';const today=key(new Date());
  for(let m=0;m<2;m++){const f=new Date(view.getFullYear(),view.getMonth()+m,1),dim=new Date(f.getFullYear(),f.getMonth()+1,0).getDate();
   let h='<div><h3 style="text-align:center">'+f.toLocaleDateString(LOC,{month:'long',year:'numeric'})+'</h3><div class="grid">'+['Mo','Tu','We','Th','Fr','Sa','Su'].map(x=>'<div class="dow">'+x+'</div>').join('');
   for(let i=0;i<(f.getDay()+6)%7;i++)h+='<div class="day blank"></div>';
   for(let d=1;d<=dim;d++){const dt=new Date(f.getFullYear(),f.getMonth(),d),k=key(dt),e=data[k],p=phaseOf(num(k));
    let c='day';if(e&&e.bleed&&BL.includes(e.bleed.flow))c+=' bleed';else if(e&&e.bleed&&e.bleed.flow==='spotting')c+=' spot';else if(p&&p.pred)c+=' pred';
-   if(p)c+=' ph-'+p.ph;if(k===today)c+=' today';if(e)c+=' dot';
+   if(p)c+=' ph-'+p.ph;if(bd){const q=Math.abs(num(k)-bd.c);if(q<=bd.s)c+=' band1';else if(q<=2*bd.s)c+=' band'}if(k===today)c+=' today';if(e)c+=' dot';
    h+='<button class="'+c+'" data-k="'+k+'" aria-label="'+dt.toLocaleDateString(LOC,{month:'long',day:'numeric'})+'"><span class="n">'+d+'</span>'+(p?'<span class="d">day '+p.k+'</span>':'')+tag(k)+'</button>'}
   wrap.insertAdjacentHTML('beforeend',h+'</div></div>')}
  wrap.querySelectorAll('.day[data-k]').forEach(b=>b.onclick=()=>openDay(b.dataset.k));
  $('#legend').innerHTML=['men','fol','ovu','lut','bleed','pred'].map(x=>'<button class="chip" data-p="'+x+'"><span class="lg" style="background:'+PH[x][1]+';border:'+(x==='pred'?'2px dashed var(--red)':'0')+'"></span>'+PH[x][0]+'</button>').join('');
  $('#legend').querySelectorAll('.chip').forEach(b=>b.onclick=()=>explain(b.dataset.p));
- $('#sum').innerHTML=A.hasData?'Average cycle: <b>'+A.L+' days</b> · Period: <b>'+A.P+' days</b>'+(A.sus?'<br>'+A.sus+' unusually long cycle(s) left out of the average. Did you forget to log a period?':'')+(A.cycles<2?'<br>Early estimate: log more cycles to improve it.':''):'Log your bleeding days and you will see your phases and predictions here.';bkBanner()}
+ $('#sum').innerHTML=A.hasData?'Average cycle: <b>'+A.L+' days</b> · Period: <b>'+A.P+' days</b>'+(A.sus?'<br>'+A.sus+' unusually long cycle(s) left out of the average. Did you forget to log a period?':'')+(A.cycles<2?'<br>Early estimate: log more cycles to improve it.':'')+(bd?'<br>Next period most likely <b>'+sh(bd.c-bd.s)+' to '+sh(bd.c+bd.s)+'</b> (dark shading), possible '+sh(bd.c-2*bd.s)+' to '+sh(bd.c+2*bd.s)+' (light shading).':''):'Log your bleeding days and you will see your phases and predictions here.';bkBanner()}
 $('#prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);draw()};
 $('#next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);draw()};
 function explain(x){$('#box').innerHTML='<h2>'+PH[x][0]+'</h2><p>'+PH[x][2]+'</p><button class="btn" onclick="closeM()">Got it</button>';$('#m').classList.add('open')}
@@ -228,13 +231,13 @@ function openDay(k){const e=data[k]||{},b=e.bleed||{},p=phaseOf(num(k));
  '<fieldset><legend>2. Emotional symptoms</legend>'+grp('emo',e.emo||[],1)+'</fieldset>'+
  '<fieldset><legend>3. Cravings</legend>'+grp('crav',e.crav||[],1)+'<input type="text" id="cravo" placeholder="If other, what?" value="'+esc(e.cravo)+'" style="margin-top:8px"></fieldset>'+
  '<fieldset><legend>4. Physical symptoms</legend>'+grp('phys',e.phys||[],1)+'</fieldset>'+
- '<fieldset><legend>5. Menstrual cramps (0 no pain – 10 worst)</legend>'+grp('cramp',e.cramp)+'</fieldset>'+
+ '<fieldset><legend>5. Menstrual cramps (0 no pain – 10 worst)</legend>'+grp('cramp',e.cramp==null?undefined:String(e.cramp))+'</fieldset>'+
  '<fieldset><legend>6. Energy</legend>'+grp('energy',e.energy)+'</fieldset>'+
  '<fieldset><legend>7. Pain medication</legend><div id="meds">'+(e.meds&&e.meds.length?e.meds:[{}]).map(m=>medRow({n:m.n||'',dose:m.dose||'',eff:m.eff||''})).join('')+'</div><button type="button" class="chip" id="addm">+ Add another medication</button></fieldset>'+
  '<fieldset><legend>8. Sex life and discharge</legend>'+grp('other',e.other||[],1)+'</fieldset>'+
  '<fieldset><legend>9. Body and contraception</legend><div class="two2"><label>Weight (kg)<input type="number" step="0.1" id="wt" value="'+esc(e.wt)+'"></label><label>Basal temperature (°C)<input type="number" step="0.01" id="tp" value="'+esc(e.temp)+'"></label></div><p class="mut" style="margin:4px 0">Contraception today</p>'+grp('bc',e.bc)+'</fieldset>'+
- '<fieldset><legend>10. Lifestyle (used in your analysis)</legend><div class="two2"><label>Sleep last night (hours)<input type="number" step="0.5" min="0" max="16" id="slp" value="'+esc(e.sleep)+'"></label><label>Exercise today (minutes)<input type="number" step="5" min="0" max="600" id="exm" value="'+esc(e.ex)+'"></label></div><p class="mut" style="margin:4px 0">Stress today (0 none – 10 extreme)</p>'+grp('stress',e.stress)+'<p class="mut" style="margin:4px 0">Mood today (1 very bad – 5 great)</p>'+grp('mood',e.mood)+'</fieldset>'+
- '<fieldset><legend>Notes</legend><textarea id="note" rows="3">'+esc(e.note)+'</textarea></fieldset>'+
+ '<fieldset><legend>10. Lifestyle (used in your analysis)</legend><div class="two2"><label>Sleep last night (hours)<input type="number" step="0.5" min="0" max="16" id="slp" value="'+esc(e.sleep)+'"></label><label>Exercise today (minutes)<input type="number" step="5" min="0" max="600" id="exm" value="'+esc(e.ex)+'"></label></div><p class="mut" style="margin:4px 0">Stress today (0 none – 10 extreme)</p>'+grp('stress',e.stress==null?undefined:String(e.stress))+'<p class="mut" style="margin:4px 0">Mood today (1 very bad – 5 great)</p>'+grp('mood',e.mood==null?undefined:String(e.mood))+'</fieldset>'+
+ '<label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="full" style="width:auto"'+(e.full?' checked':'')+'> I logged everything for today (no other symptoms)</label><fieldset><legend>Notes</legend><textarea id="note" rows="3">'+esc(e.note)+'</textarea></fieldset>'+
  '<button class="btn" id="save">Save</button> <button class="btn g" onclick="closeM()">Cancel</button> <button class="btn alt" id="del">Delete this day</button>';
  $('#m').classList.add('open');
  if(p)$('#phb').onclick=()=>explain(p.ph);
@@ -248,9 +251,9 @@ function openDay(k){const e=data[k]||{},b=e.bleed||{},p=phaseOf(num(k));
   const fl=one('flow');if(fl)r.bleed={flow:fl.toLowerCase(),amount:one('amount'),color:one('color'),clots:one('clots'),change:one('change')};
   ['emo','crav','phys','other'].forEach(n=>{const v=g(n);if(v.length)r[n]=v});
   if(g('crav').includes('Other')){const o=$('#cravo').value.trim();if(o)r.cravo=o}
-  if(one('bc'))r.bc=one('bc');const wv=$('#wt').value.trim(),tv=$('#tp').value.trim();if(wv)r.wt=wv;if(tv)r.temp=tv;if(one('cramp'))r.cramp=one('cramp');if(one('energy'))r.energy=one('energy');const sl0=$('#slp').value.trim(),ex0=$('#exm').value.trim();if(sl0)r.sleep=sl0;if(ex0)r.ex=ex0;if(one('stress'))r.stress=one('stress');if(one('mood'))r.mood=one('mood');
+  if(one('bc'))r.bc=one('bc');const wv=$('#wt').value.trim(),tv=$('#tp').value.trim();if(wv&&isFinite(+wv))r.wt=+wv;if(tv&&isFinite(+tv))r.temp=+tv;if(one('cramp'))r.cramp=+one('cramp');if(one('energy'))r.energy=one('energy');const sl0=$('#slp').value.trim(),ex0=$('#exm').value.trim();if(sl0&&isFinite(+sl0))r.sleep=+sl0;if(ex0&&isFinite(+ex0))r.ex=+ex0;if(one('stress'))r.stress=+one('stress');if(one('mood'))r.mood=+one('mood');
   const ms=[...document.querySelectorAll('#meds .med')].map(x=>{const i=x.querySelectorAll('input,select');return{n:i[0].value.trim(),dose:i[1].value.trim(),eff:i[2].value}}).filter(m=>m.n);
-  if(ms.length)r.meds=ms;const nt=$('#note').value.trim();if(nt)r.note=nt;
+  if(ms.length)r.meds=ms;if($('#full').checked)r.full=1;const nt=$('#note').value.trim();if(nt)r.note=nt;
   if(Object.keys(r).length)data[k]=r;else delete data[k];persist()}}
 function persist(){sv('cm_d_'+user,data);closeM();draw()}
 
@@ -320,10 +323,10 @@ const svg=(w,h,i,l)=>{const t='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-la
 const shy=n=>fromNum(n).toLocaleDateString(LOC,{month:'short',day:'numeric',year:'2-digit'});
 const xl=(x,y,t,rot)=>rot?'<text transform="rotate(-60 '+x+' '+y+')" x="'+x+'" y="'+y+'" font-size="10" text-anchor="end" fill="#7d6370">'+esc(t)+'</text>':'<text x="'+x+'" y="'+(y+12)+'" font-size="10" text-anchor="middle" fill="#7d6370">'+esc(t)+'</text>';
 function bars(lab,val,col){const rot=val.length>6&&lab.some(l=>String(l).length>4),w=Math.max(520,val.length*26+70),h=150,m=Math.max(...val,1),sp=(w-40)/val.length,bw=Math.min(44,sp-8);
- return svg(w,h+(rot?64:32),val.map((v,i)=>{const x=30+i*sp,bh=v/m*h;return'<rect x="'+x+'" y="'+(h-bh+14)+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+col+'"/><text x="'+(x+bw/2)+'" y="'+(h-bh+10)+'" font-size="11" text-anchor="middle">'+v+'</text>'+xl(x+bw/2+(rot?4:0),h+(rot?20:16),lab[i],rot)}).join(''),'Bar chart: '+lab.map((l,i)=>l+' '+val[i]).join(', '))}
+ return svg(w,h+(rot?64:32),val.map((v,i)=>{const x=30+i*sp,bh=v/m*h;return'<rect x="'+x+'" y="'+(h-bh+14)+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+col+'"><title>'+esc(lab[i])+': '+v+'</title></rect><text x="'+(x+bw/2)+'" y="'+(h-bh+10)+'" font-size="11" text-anchor="middle">'+v+'</text>'+xl(x+bw/2+(rot?4:0),h+(rot?20:16),lab[i],rot)}).join(''),'Bar chart: '+lab.map((l,i)=>l+' '+val[i]).join(', '))}
 function line(P,col){if(P.length<2)return'<p class="mut">Log at least 2 values to see this chart.</p>';
  const w=520,h=140,lo=Math.min(...P.map(p=>p.v)),hi=Math.max(...P.map(p=>p.v)),r=hi-lo||1,tn=P.every(p=>p.n!==undefined),n0=tn?P[0].n:0,n1=tn?P[P.length-1].n:0,xy=(p,i)=>[40+(tn&&n1>n0?(p.n-n0)/(n1-n0):i/(P.length-1))*(w-60),h-(p.v-lo)/r*(h-30)];
- return svg(w,h+30,'<polyline fill="none" stroke="'+col+'" stroke-width="3" points="'+P.map((p,i)=>xy(p,i).join(',')).join(' ')+'"/>'+P.map((p,i)=>{const[x,y]=xy(p,i);return'<circle cx="'+x+'" cy="'+y+'" r="4" fill="'+col+'"/>'}).join('')+'<text x="40" y="'+(h+22)+'" font-size="10" fill="#7d6370">'+P[0].l+'</text><text x="'+(w-20)+'" y="'+(h+22)+'" font-size="10" text-anchor="end" fill="#7d6370">'+P[P.length-1].l+'</text><text x="2" y="14" font-size="10">'+hi+'</text><text x="2" y="'+h+'" font-size="10">'+lo+'</text>','Line chart of '+P.length+' values from '+P[0].l+' ('+P[0].v+') to '+P[P.length-1].l+' ('+P[P.length-1].v+'), lowest '+lo+', highest '+hi)}
+ return svg(w,h+30,'<polyline fill="none" stroke="'+col+'" stroke-width="3" points="'+P.map((p,i)=>xy(p,i).join(',')).join(' ')+'"/>'+P.map((p,i)=>{const[x,y]=xy(p,i);return'<circle cx="'+x+'" cy="'+y+'" r="6" fill="'+col+'"><title>'+esc(p.l)+': '+p.v+'</title></circle>'}).join('')+'<text x="40" y="'+(h+22)+'" font-size="10" fill="#7d6370">'+P[0].l+'</text><text x="'+(w-20)+'" y="'+(h+22)+'" font-size="10" text-anchor="end" fill="#7d6370">'+P[P.length-1].l+'</text><line x1="40" x2="'+(w-20)+'" y1="30" y2="30" stroke="#00000014"/><line x1="40" x2="'+(w-20)+'" y1="'+(h-(h-30)/2)+'" y2="'+(h-(h-30)/2)+'" stroke="#00000014"/><line x1="40" x2="'+(w-20)+'" y1="'+h+'" y2="'+h+'" stroke="#00000014"/><text x="2" y="34" font-size="10">'+hi+'</text><text x="2" y="'+(h-(h-30)/2+3)+'" font-size="10">'+Math.round((hi+lo)*50)/100+'</text><text x="2" y="'+h+'" font-size="10">'+lo+'</text>','Line chart of '+P.length+' values from '+P[0].l+' ('+P[0].v+') to '+P[P.length-1].l+' ('+P[P.length-1].v+'), lowest '+lo+', highest '+hi)}
 
 /* ---------- pattern detection ---------- */
 function patterns(){const out=[],ks=Object.keys(data).sort(),cnt={},cr={};
@@ -342,12 +345,30 @@ function patterns(){const out=[],ks=Object.keys(data).sort(),cnt={},cr={};
  const md={};ks.forEach(k=>(data[k].meds||[]).forEach(m=>{const i=EFF.indexOf(m.eff);if(i>0)(md[m.n.toLowerCase()]=md[m.n.toLowerCase()]||[]).push(i)}));
  Object.keys(md).forEach(n=>out.push('<b>'+esc(n)+'</b>: your average relief rating is "'+EFF[Math.round(av(md[n]))].toLowerCase()+'" ('+md[n].length+' entries).'));
  return out}
+function kpis(cl){const t=num(key(new Date())),nx=A.all.find(x=>x.pred&&x.s>=t),ls=A.starts[A.starts.length-1],
+ tile=(a,v,b)=>'<div class="card" style="text-align:center;padding:12px"><div class="mut" style="font-size:12px">'+a+'</div><div style="font-size:24px;font-weight:700;color:var(--red)">'+v+'</div><div class="mut" style="font-size:12px">'+b+'</div></div>',dl=nx?nx.s-t:0;
+ return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">'+
+ tile('Average cycle',A.hasData?A.L+' d':'–',cl.length>=2?'range '+Math.min(...cl)+' to '+Math.max(...cl)+' d':'log more cycles')+
+ tile('Next period',nx?sh(nx.s):'–',nx?(dl>0?'in '+dl+' days':dl===0?'today':Math.abs(dl)+' days ago'):'no estimate yet')+
+ tile('Period length',A.hasData?A.P+' d':'–','average')+
+ tile('Last period',ls?sh(ls):'–',A.sus?A.sus+' long cycle(s) excluded':'')+'</div>'}
+function overlay(f,col){const S=A.starts,cy=[];
+ for(let i=Math.max(0,S.length-9);i<S.length-1;i++){const len=S[i+1]-S[i];if(len<15||len>60)continue;const pts=[];for(let d=1;d<=Math.min(len,40);d++){const e=data[key(fromNum(S[i]+d-1))];if(e&&e[f]!==undefined&&e[f]!=='')pts.push([d,+e[f]])}if(pts.length>=3)cy.push(pts)}
+ if(cy.length<2)return'<p class="mut">Needs at least 2 completed cycles with 3 or more values each.</p>';
+ const all=cy.flat(),lo=Math.min(...all.map(q=>q[1])),hi=Math.max(...all.map(q=>q[1])),r=hi-lo||1,mx=Math.max(8,Math.max(...all.map(q=>q[0]))),w=520,h=170,
+ X=d=>40+(d-1)/(mx-1)*(w-60),Y=v=>h-4-(v-lo)/r*(h-24),by={};all.forEach(([d,v])=>(by[d]=by[d]||[]).push(v));
+ const mp=Object.keys(by).map(Number).sort((a,b)=>a-b).filter(d=>by[d].length>=2).map(d=>[d,ST.mean(by[d])]),rd1=v=>Math.round(v*100)/100;
+ let o=[1,7,14,21,28,35].filter(d=>d<=mx).map(d=>'<line x1="'+X(d)+'" x2="'+X(d)+'" y1="0" y2="'+h+'" stroke="#00000012"/><text x="'+X(d)+'" y="'+(h+14)+'" font-size="10" text-anchor="middle" fill="#7d6370">day '+d+'</text>').join('');
+ o+=cy.map(c=>'<polyline fill="none" stroke="'+col+'" stroke-opacity=".3" stroke-width="1.5" points="'+c.map(q=>X(q[0])+','+Y(q[1])).join(' ')+'"/>').join('');
+ o+=mp.length>1?'<polyline fill="none" stroke="'+col+'" stroke-width="3.5" points="'+mp.map(q=>X(q[0])+','+Y(q[1])).join(' ')+'"/>':'';
+ o+='<text x="2" y="12" font-size="10">'+rd1(hi)+'</text><text x="2" y="'+h+'" font-size="10">'+rd1(lo)+'</text>';
+ return svg(w,h+22,o,'One line per cycle of '+f+' by cycle day, with the average in bold ('+cy.length+' cycles)')+'<p class="mut" style="font-size:13px">Thin lines: each of your last '+cy.length+' completed cycles. Bold line: average for each cycle day (needs 2 or more cycles).</p>'}
 function insights(){analyze();const ks=Object.keys(data).sort(),cl=A.starts.slice(1).map((s,i)=>s-A.starts[i]).slice(-8),st=A.starts.slice(0,-1).slice(-8),sc={};
  ks.forEach(k=>[...(data[k].emo||[]),...(data[k].phys||[])].forEach(s=>sc[s]=(sc[s]||0)+1));
  const top=Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,6),pt=a=>ks.filter(k=>data[k][a]).slice(-30).map(k=>({l:sh(num(k)),n:num(k),v:+data[k][a]})),
  cp=ks.filter(k=>data[k].cramp!==undefined).slice(-30).map(k=>({l:sh(num(k)),n:num(k),v:+data[k].cramp})),P=patterns(),ch=(t,b)=>'<div class="card"><h3>'+t+'</h3>'+b+'</div>',e='<p class="mut">Not enough data yet.</p>';
- $('#t-ins').innerHTML='<div class="card"><h3>Patterns we noticed</h3>'+(P.length?P.map(x=>'<div class="flag">'+x+'</div>').join(''):'<p class="mut">Keep logging. Patterns appear after a few cycles.</p>')+'<p class="mut" style="font-size:13px">These are simple statistics from what you logged, not a diagnosis.</p></div><div class="two" style="margin-top:14px">'+
- ch('Your cycle at a glance',A.hasData?wheelBox(A.L,A.P,(phaseOf(num(key(new Date())))||{}).k||0)+'<p class="mut" style="font-size:13px">Built from your own logged periods. Tap a colour to read about that phase.</p>':'<p class="mut">Log a few period days to see your own cycle wheel.</p>')+ch('Cycle length (days)',cl.length?bars(st.map(s=>sh(s)),cl,'#93C572'):e)+ch('Cramp pain (0-10)',line(cp,'#C2284F'))+ch('Most logged symptoms',top.length?bars(top.map(x=>x[0].slice(0,9)),top.map(x=>x[1]),'#7EC8E8'):e)+ch('Basal temperature (°C)',line(pt('temp'),'#E8A93A'))+ch('Weight (kg)',line(pt('wt'),'#7EC8E8'))+'</div>';wireWheel($('#t-ins'))}
+ $('#t-ins').innerHTML=kpis(cl)+'<div class="card" style="margin-top:14px"><h3>Patterns we noticed</h3>'+(P.length?P.map(x=>'<div class="flag">'+x+'</div>').join(''):'<p class="mut">Keep logging. Patterns appear after a few cycles.</p>')+'<p class="mut" style="font-size:13px">These are simple statistics from what you logged, not a diagnosis.</p></div><div class="two" style="margin-top:14px">'+
+ ch('Your cycle at a glance',A.hasData?wheelBox(A.L,A.P,(phaseOf(num(key(new Date())))||{}).k||0)+'<p class="mut" style="font-size:13px">Built from your own logged periods. Tap a colour to read about that phase.</p>':'<p class="mut">Log a few period days to see your own cycle wheel.</p>')+ch('Cycle length (days)',cl.length?bars(st.map(s=>sh(s)),cl,'#93C572'):e)+ch('Cramp pain (0-10)',line(cp,'#C2284F'))+ch('Cramps by cycle day, cycle by cycle',overlay('cramp','#C2284F'))+ch('Most logged symptoms',top.length?bars(top.map(x=>x[0].slice(0,9)),top.map(x=>x[1]),'#7EC8E8'):e)+ch('Basal temperature (°C)',line(pt('temp'),'#E8A93A'))+ch('Temperature by cycle day, cycle by cycle',overlay('temp','#E8A93A'))+ch('Weight (kg)',line(pt('wt'),'#7EC8E8'))+'</div>';wireWheel($('#t-ins'))}
 
 /* ---------- learn ---------- */
 /* ---------- learn ---------- */
@@ -649,6 +670,7 @@ const ST={sum:a=>a.reduce((x,y)=>x+y,0),
  med(a){if(!a.length)return NaN;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2},
  pearson(x,y){const n=x.length;if(n<3)return null;const mx=this.mean(x),my=this.mean(y);let a=0,b=0,c=0;for(let i=0;i<n;i++){a+=(x[i]-mx)*(y[i]-my);b+=(x[i]-mx)**2;c+=(y[i]-my)**2}return b&&c?a/Math.sqrt(b*c):null},
  spearman(x,y){const rk=a=>{const o=a.map((v,i)=>[v,i]).sort((p,q)=>p[0]-q[0]),r=Array(a.length);for(let i=0;i<o.length;){let j=i;while(j+1<o.length&&o[j+1][0]===o[i][0])j++;for(let k=i;k<=j;k++)r[o[k][1]]=(i+j)/2+1;i=j+1}return r};return this.pearson(rk(x),rk(y))},
+ bootCI(x,y,g){const G={};x.forEach((_,i)=>(G[g[i]]=G[g[i]]||[]).push(i));const K=Object.keys(G);if(K.length<4)return null;let sd=12345;const rnd=()=>(sd=(sd*1664525+1013904223)%4294967296)/4294967296,R=[];for(let b=0;b<300;b++){const ix=[];for(let j=0;j<K.length;j++)ix.push(...G[K[Math.floor(rnd()*K.length)]]);const r=this.spearman(ix.map(i=>x[i]),ix.map(i=>y[i]));if(r!==null)R.push(r)}if(R.length<100)return null;R.sort((a,b)=>a-b);return[R[Math.floor(R.length*.025)],R[Math.floor(R.length*.975)]]},
  linreg(x,y){const n=x.length,mx=this.mean(x),my=this.mean(y);let a=0,b=0;for(let i=0;i<n;i++){a+=(x[i]-mx)*(y[i]-my);b+=(x[i]-mx)**2}const s=b?a/b:0;return{slope:s,icpt:my-s*mx}}};
 const rd=(x,d)=>isNaN(x)||x===null?'–':String(Math.round(x*10**(d||0))/10**(d||0));
 const dstr=n=>fmt(key(fromNum(n)));
@@ -661,7 +683,7 @@ const V={cramp:{n:'Cramp pain (0 to 10)',f:e=>e.cramp!==undefined&&e.cramp!==''?
  cd:{n:'Cycle day',f:(e,p)=>p&&p.k<=45?p.k:null}};
 const PAIRS=[['cramp','energy'],['cramp','emo'],['cramp','phys'],['energy','emo'],['energy','cd'],['emo','cd'],['cramp','cd']];
 
-function migrate(){let ch=0;Object.keys(data).forEach(k=>{const o=data[k].other;if(!o)return;const m=o.map(x=>x==='Sex with protection'?'Sex with a condom':x==='Sex without protection'?'Sex without a condom':x);if(m.some((x,i)=>x!==o[i])){data[k].other=m;ch=1}});if(ch)sv('cm_d_'+user,data)}
+function migrate(){let ch=0;Object.keys(data).forEach(k=>{const e=data[k];['cramp','stress','mood','wt','temp','sleep','ex'].forEach(f=>{if(typeof e[f]==='string'){const n=e[f].trim()===''?NaN:+e[f];if(isFinite(n))e[f]=n;else delete e[f];ch=1}});if(e.phys){const m=e.phys.map(x=>x==='Low back pain'?'Lower back pain':x);if(m.some((x,i)=>x!==e.phys[i])){e.phys=m;ch=1}}});Object.keys(data).forEach(k=>{const o=data[k].other;if(!o)return;const m=o.map(x=>x==='Sex with protection'?'Sex with a condom':x==='Sex without protection'?'Sex without a condom':x);if(m.some((x,i)=>x!==o[i])){data[k].other=m;ch=1}});if(ch)sv('cm_d_'+user,data)}
 
 function cycleRecs(){analyze();const today=num(key(new Date()));return A.starts.map((s,i)=>{const nx=A.starts[i+1],end=nx?nx-1:Math.max(s,today),g=A.groups[i],
  ks=Object.keys(data).filter(k=>{const n=num(k);return n>=s&&n<=end}).sort(),
@@ -786,18 +808,18 @@ function anaSections(){analyze();const [RA,RB]=anRange(),C=cycleRecs().filter(c=
  h+=card('5. Pain pattern',pn);
 
  /* heatmap */
- const sc={},dc={men:0,fol:0,ovu:0,lut:0};ks.forEach(k=>{const e=data[k],p=phaseOf(num(k));if(!p)return;dc[p.ph]++;[...(e.emo||[]),...(e.phys||[]),...(e.crav||[]).map(x=>x+' craving')].forEach(x=>{const c=sc[x]=sc[x]||{t:0,men:0,fol:0,ovu:0,lut:0};c[p.ph]++;c.t++})});
+ const sc={},dc={men:0,fol:0,ovu:0,lut:0};ks.forEach(k=>{const e=data[k],p=phaseOf(num(k));if(!p)return;if(!(e.full||(e.emo||[]).length||(e.phys||[]).length||(e.crav||[]).length))return;dc[p.ph]++;[...(e.emo||[]),...(e.phys||[]),...(e.crav||[]).map(x=>x+' craving')].forEach(x=>{const c=sc[x]=sc[x]||{t:0,men:0,fol:0,ovu:0,lut:0};c[p.ph]++;c.t++})});
  const top=Object.entries(sc).filter(x=>x[1].t>=3).sort((a,b)=>b[1].t-a[1].t).slice(0,9),PHS=['men','fol','ovu','lut'];let hm='';
- if(top.length){hm='<p>For each symptom: out of the days you logged in each phase, on what percentage did you log it? Darker means more often. “–” means fewer than 3 logged days in that phase.</p><div class="tw"><table><tr><th>Symptom</th>'+PHS.map(p=>'<th>'+PH[p][0]+'<br><span class="mut" style="font-weight:400">'+dc[p]+' days</span></th>').join('')+'</tr>'+top.map(([nm,c])=>'<tr><td><b>'+esc(cap(nm))+'</b></td>'+PHS.map(p=>{if(dc[p]<3)return'<td style="text-align:center">–</td>';const pc=c[p]/dc[p];return'<td style="text-align:center;font-weight:700;background:rgba(194,40,79,'+(.06+.62*pc).toFixed(2)+');color:'+(pc>.55?'#fff':'#3A1D2B')+'">'+Math.round(pc*100)+'%</td>'}).join('')+'</tr>').join('')+'</table></div><p class="mut" style="font-size:13px">Days with no symptom logged still count in the total, so log your good days too for a fair picture.</p>';
+ if(top.length){hm='<p>For each symptom: out of the days you logged symptoms (or marked everything as logged) in each phase, on what percentage did you log it? Darker means more often. “–” means fewer than 3 logged days in that phase.</p><div class="tw"><table><tr><th>Symptom</th>'+PHS.map(p=>'<th>'+PH[p][0]+'<br><span class="mut" style="font-weight:400">'+dc[p]+' days</span></th>').join('')+'</tr>'+top.map(([nm,c])=>'<tr><td><b>'+esc(cap(nm))+'</b></td>'+PHS.map(p=>{if(dc[p]<3)return'<td style="text-align:center">–</td>';const pc=c[p]/dc[p];return'<td style="text-align:center;font-weight:700;background:rgba(194,40,79,'+(.06+.62*pc).toFixed(2)+');color:'+(pc>.55?'#fff':'#3A1D2B')+'">'+Math.round(pc*100)+'%</td>'}).join('')+'</tr>').join('')+'</table></div><p class="mut" style="font-size:13px">Days with no symptom logged still count in the total, so log your good days too for a fair picture.</p>';
   let best=null;top.forEach(([nm,c])=>PHS.forEach(p=>{if(dc[p]>=3){const pc=c[p]/dc[p];if(pc>=.6&&(!best||pc>best[2]))best=[nm,p,pc]}}));if(best)bul.push('<b>'+esc(cap(best[0]))+'</b> shows up on '+Math.round(best[2]*100)+'% of your logged days during '+({men:'your period',fol:'the follicular phase',ovu:'ovulation',lut:'the luteal phase'})[best[1]]+'.')}
  else hm='<p class="mut">Log symptoms on a few days of different phases to see this map.</p>';
  h+=card('6. Symptoms across the cycle (heat map)',hm);
 
  /* correlations */
- const days=ks.map(k=>{const e=data[k],p=phaseOf(num(k));return Object.fromEntries(Object.keys(V).map(x=>[x,V[x].f(e,p)]))}),
-  pr=PAIRS.map(([a,b])=>{const rows=days.filter(d=>d[a]!==null&&d[b]!==null),xs=rows.map(d=>d[a]),ys=rows.map(d=>d[b]),r=rows.length>=8?ST.spearman(xs,ys):null;return{a,b,n:rows.length,r,xs,ys}}).filter(x=>x.r!==null);let cr='';
- if(pr.length){cr='<p>The rank correlation (Spearman) <b>r</b> goes from −1 to +1. Near 0 means the two things are not linked in your data. Positive means they rise together. Negative means one rises when the other falls.</p><div class="tw"><table><tr><th>Pair</th><th>r</th><th></th><th>Days</th><th>Strength</th></tr>'+pr.map(x=>'<tr><td>'+V[x.a].n+' ↔ '+V[x.b].n+'</td><td><b>'+rd(x.r,2)+'</b></td><td>'+rbar(x.r)+'</td><td>'+x.n+'</td><td>'+strength(x.r)+(x.r>0?', positive':', negative')+'</td></tr>').join('')+'</table></div><p><label for="sp" style="display:inline">See a pair as a scatter plot:</label> <select id="sp" style="width:auto">'+pr.map((x,i)=>'<option value="'+i+'">'+V[x.a].n+' vs '+V[x.b].n+'</option>').join('')+'</select></p><div id="spc"></div><p class="mut" style="font-size:13px"><b>Correlation is not causation.</b> A link in your data does not prove that one thing causes the other.</p>';
-  const strong=[...pr].sort((a,b)=>Math.abs(b.r)-Math.abs(a.r))[0];if(Math.abs(strong.r)>=.4)bul.push('Strongest link in your data: '+V[strong.a].n.toLowerCase()+' and '+V[strong.b].n.toLowerCase()+' (r = '+rd(strong.r,2)+').')}
+ const days=ks.map(k=>{const e=data[k],p=phaseOf(num(k));return Object.assign(Object.fromEntries(Object.keys(V).map(x=>[x,V[x].f(e,p)])),{_g:p?num(k)-p.k+1:-1})}),
+  pr=PAIRS.map(([a,b])=>{const rows=days.filter(d=>d[a]!==null&&d[b]!==null),xs=rows.map(d=>d[a]),ys=rows.map(d=>d[b]),gs=rows.map(d=>d._g),r=rows.length>=8?ST.spearman(xs,ys):null;return{a,b,n:rows.length,r,xs,ys,gs}}).filter(x=>x.r!==null);let cr='';
+ if(pr.length){cr='<p>The rank correlation (Spearman) <b>r</b> goes from −1 to +1. Near 0 means the two things are not linked in your data. Positive means they rise together. Negative means one rises when the other falls.</p><div class="tw"><table><tr><th>Pair</th><th>r</th><th></th><th>Days</th><th>Strength</th></tr>'+pr.map(x=>'<tr><td>'+V[x.a].n+' ↔ '+V[x.b].n+'</td><td><b>'+rd(x.r,2)+'</b>'+((q=>q?'<br><span class="mut" style="font-size:12px">95% CI '+rd(q[0],2)+' to '+rd(q[1],2)+(q[0]<=0&&q[1]>=0?' · includes 0, may be chance':'')+'</span>':'')(ST.bootCI(x.xs,x.ys,x.gs)))+'</td><td>'+rbar(x.r)+'</td><td>'+x.n+'</td><td>'+strength(x.r)+(x.r>0?', positive':', negative')+'</td></tr>').join('')+'</table></div><p><label for="sp" style="display:inline">See a pair as a scatter plot:</label> <select id="sp" style="width:auto">'+pr.map((x,i)=>'<option value="'+i+'">'+V[x.a].n+' vs '+V[x.b].n+'</option>').join('')+'</select></p><div id="spc"></div><p class="mut" style="font-size:13px"><b>Correlation is not causation.</b> A link in your data does not prove that one thing causes the other.</p>';
+  const strong=[...pr].sort((a,b)=>Math.abs(b.r)-Math.abs(a.r))[0];if(Math.abs(strong.r)>=.4&&(q=>!q||q[0]>0||q[1]<0)(ST.bootCI(strong.xs,strong.ys,strong.gs)))bul.push('Strongest link in your data: '+V[strong.a].n.toLowerCase()+' and '+V[strong.b].n.toLowerCase()+' (r = '+rd(strong.r,2)+').')}
  else cr='<p class="mut">You need at least 8 logged days that contain both values of a pair (for example cramps and energy) to calculate a correlation.</p>';
  h+=card('7. Relationships between what you log',cr);
 
@@ -867,7 +889,7 @@ function health(){const el=$('#t-health'),V=cons.map((c,i)=>({c,i})).sort((a,b)=
  el.innerHTML='<div class="card"><h3>My profile</h3><p class="mut">Optional. Age helps tailor recommendations. Your cervical screening dates appear on the calendar.</p><div class="two2"><label>Age<input type="number" min="9" max="99" id="pa" value="'+esc(prof.age)+'"></label><span></span><label>Last cervical screening (Pap or HPV test)<input type="date" id="pl" value="'+esc(prof.pap)+'"></label><label>Next cervical screening<input type="date" id="pn" value="'+esc(prof.papNext)+'"></label><label>Last STI test (optional)<input type="date" id="pst" value="'+esc(prof.sti)+'"></label><label>Type of test<select id="pt"><option value="3">Pap test (repeat about every 3 years)</option><option value="5"'+(prof.papT==='5'?' selected':'')+'>HPV DNA test (repeat every 5 years or more)</option></select></label></div><p class="mut" style="font-size:13px">If the next date is empty, it is set from the test type (WHO: about every 3 years with Pap or VIA, every 5 to 10 years with an HPV DNA test). Your doctor may suggest another interval.</p><button class="btn" id="ps">Save profile</button></div>'+
  '<div class="card" style="margin-top:14px"><h3>Recommended for you</h3>'+(prof.age?recs(+prof.age).map(x=>'<p>• '+x[0]+(x[1]?' <span class="tg" style="display:inline">WHO</span>':'')+'</p>').join(''):'<p class="mut">Enter your age to see recommendations such as when to start Pap tests and mammograms.</p>')+'</div>'+
  '<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><h3>Doctor visits</h3><button class="btn" id="vnw">+ Add visit</button></div>'+(V.length?V.map(o=>'<div class="flag" style="border-color:var(--lut);background:#EAF6FB"><b>'+fmt(o.c.date)+'</b>'+(o.c.doc?' · '+esc(o.c.doc):'')+'<br>'+esc(o.c.notes)+(o.c.meds&&o.c.meds.length?'<br><i>'+o.c.meds.map(m=>esc(m.n+(m.dose?' · '+m.dose:'')+(m.time?' · '+m.time:''))).join('<br>')+'</i>':'')+'<br><button class="chip" data-e="'+o.i+'">Edit</button> <button class="chip" data-x="'+o.i+'">Delete</button></div>').join(''):'<p class="mut">No visits yet. Add the date, the doctor’s instructions and any prescribed medication.</p>')+'</div>'+
- '<div class="card prose" style="margin-top:14px"><h3>Privacy and your data</h3><p><b>Only you can see this.</b> Everything you log stays in this browser, on this device. It is never sent to the creators of this page, to GitHub or to anyone, and nobody uses it for research or anything else. Your email is only the name of your account on this device and is never sent anywhere. This page cannot send emails, so a forgotten password can only be reset with your recovery code.</p><div class="call amber"><b>Backups are only made on your device.</b> The website cannot keep a copy for you. Download a backup regularly, otherwise your data cannot be recovered if you clear your browser or lose this device.</div><p><button class="btn" id="hbd">⬇ Download backup</button> <button class="btn alt" id="hbr">Restore from file</button></p><p><button class="btn alt" id="hrc">Create a new recovery code</button> <span class="mut" style="font-size:13px">(the old one stops working)</span></p><p><button class="btn alt" id="w1">Delete all my data</button> <button class="btn g" id="w2">Delete my account</button></p></div>';
+ '<div class="card prose" style="margin-top:14px"><h3>Privacy and your data</h3><p><b>Your data stays on this device.</b> Everything you log is stored in this browser. It is never sent to the creators of this page, to GitHub or to anyone, and nobody uses it for research or anything else. Your email is only the name of your account on this device and is never sent anywhere. This page cannot send emails, so a forgotten password can only be reset with your recovery code.</p><div class="call amber"><b>About the password.</b> It only locks the login screen of this page. The data itself is not encrypted, so anyone who can open this browser on your device could read it. Keep your device locked and do not use this page on shared or public computers.</div><div class="call amber"><b>Backups are only made on your device.</b> The website cannot keep a copy for you. Download a backup regularly, otherwise your data cannot be recovered if you clear your browser or lose this device.</div><p><button class="btn" id="hbd">⬇ Download backup</button> <button class="btn alt" id="hbr">Restore from file</button></p><p><button class="btn alt" id="hrc">Create a new recovery code</button> <span class="mut" style="font-size:13px">(the old one stops working)</span></p><p><button class="btn alt" id="w1">Delete all my data</button> <button class="btn g" id="w2">Delete my account</button></p></div>';
  $('#ps').onclick=()=>{prof.age=$('#pa').value;prof.pap=$('#pl').value;prof.papNext=$('#pn').value;prof.papT=$('#pt').value;prof.sti=$('#pst').value;
   if(prof.pap&&!prof.papNext){const d=new Date(prof.pap+'T00:00:00');d.setFullYear(d.getFullYear()+(+prof.papT||3));prof.papNext=key(d)}
   sv('cm_p_'+user,prof);draw();health();alert('Profile saved.')};
@@ -1090,4 +1112,24 @@ function reportExtras(){const all=cycleRecs().slice(-12),C=all.filter(c=>c.ok),f
 BODY.cmp=()=>topCmp();BODY.dq=()=>topDq();const fc0=BODY.fc;BODY.fc=(R,k)=>fc0(R,k)+'<p><button class="btn" data-act="ics">⬇ Add reminders to my calendar (.ics)</button></p>';
 
 const s=sessionStorage.getItem('cm_s');if(s&&ld(K,{})[s]){user=s;data=ld('cm_d_'+s,{});prof=ld('cm_p_'+s,{});cons=ld('cm_c_'+s,[]);start()}
+
+/* ---------- self-tests: open index.html#tests, or run runTests() in the console ---------- */
+function runTests(){const sv0={u:user,d:data,k:_ak},res=[],
+ t=(n,f)=>{try{f();res.push([1,n])}catch(e){res.push([0,n+': '+e.message])}},ok=(c,m)=>{if(!c)throw Error(m||'failed')},eq=(a,b)=>{if(a!==b)throw Error(a+' !== '+b)},near=(a,b)=>{if(Math.abs(a-b)>1e-9)throw Error(a+' vs '+b)},
+ series=(st,len=5)=>{const d={},b0=num('2026-01-05');st.forEach(x=>{for(let i=0;i<len;i++)d[key(fromNum(b0+x+i))]={bleed:{flow:'moderate'}}});return d},use=d=>{data=d;_ak=null;analyze()};
+ try{user='__test__';
+ t('Spearman: monotonic = 1',()=>near(ST.spearman([1,2,3,4,5],[1,4,9,16,100]),1));
+ t('Spearman: inverse = -1',()=>near(ST.spearman([1,2,3,4],[9,7,5,1]),-1));
+ t('Spearman: handles ties',()=>{const r=ST.spearman([1,1,2,3],[1,2,2,3]);ok(r>.8&&r<=1)});
+ t('bootCI: fewer than 4 cycles gives null',()=>eq(ST.bootCI([1,2,3],[1,2,3],[0,0,1]),null));
+ t('bootCI: clear relation gives positive CI',()=>{const x=[],y=[],g=[];for(let c=0;c<8;c++)for(let i=0;i<10;i++){x.push(i+c*.1);y.push(i*2+c*.1);g.push(c)}const q=ST.bootCI(x,y,g);ok(q&&q[0]>.8&&q[1]<=1)});
+ t('analyze: 28-day cycles, 5-day period',()=>{use(series([0,28,56,84,112,140,168,196]));eq(A.L,28);eq(A.P,5);eq(A.sus,0)});
+ t('analyze: skipped period (56-day cycle) is excluded',()=>{use(series([0,28,56,112,140,168,196]));eq(A.L,28);eq(A.sus,1)});
+ t('analyze: cache refreshes when data changes',()=>{use(series([0,30,60,90]));eq(A.L,30);use(series([0,26,52,78]));eq(A.L,26)});
+ t('migrate: text to numbers, aliases, empties',()=>{data={'2026-01-01':{cramp:'5',temp:'36.5',sleep:'',phys:['Low back pain']}};migrate();const e=data['2026-01-01'];eq(e.cramp,5);eq(e.temp,36.5);eq(e.sleep,undefined);eq(e.phys[0],'Lower back pain')});
+ t('bandInfo: regular cycles give a ±1 day band',()=>{const n=num(key(new Date())),b0=n-10-28*5,d={};[0,1,2,3,4,5].forEach(i=>{for(let j=0;j<5;j++)d[key(fromNum(b0+28*i+j))]={bleed:{flow:'moderate'}}});use(d);const b=bandInfo();ok(b&&b.s===1&&b.c>=n)});
+ t('demo data: generated and analysed',()=>{use({});const n=demoData();analyze();ok(n>500&&A.cycles>=30)});
+ }finally{try{localStorage.removeItem('cm_d___test__')}catch(e){}user=sv0.u;data=sv0.d;_ak=null;if(user)analyze()}
+ return res}
+if(location.hash==='#tests')setTimeout(()=>{const r=runTests(),el=document.createElement('pre');el.style.cssText='position:fixed;inset:0;z-index:99;margin:0;padding:16px;background:#fff;color:#000;overflow:auto;font:14px monospace';el.textContent=r.map(x=>(x[0]?'✔ ':'✘ ')+x[1]).join('\n')+'\n\n'+r.filter(x=>x[0]).length+' passed, '+r.filter(x=>!x[0]).length+' failed';document.body.appendChild(el)},0);
 </script></body></html>
